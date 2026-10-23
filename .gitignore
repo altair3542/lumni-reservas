@@ -1,0 +1,23 @@
+# Personal secrets / local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Node and test outputs
+node_modules/
+.pnpm-store/
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+*.log
+
+# Environment and editors
+.DS_Store
+.idea/
+.vscode/
+.tmp/
