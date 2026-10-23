@@ -1,0 +1,31 @@
+{
+  "name": "lumni-reservas",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.18.0 <23"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @lumni/shared build && pnpm --parallel --filter @lumni/api --filter @lumni/web dev",
+    "build": "pnpm -r build",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "pnpm --filter @lumni/shared build && pnpm -r typecheck",
+    "test": "pnpm --filter @lumni/shared build && pnpm --filter @lumni/shared test && pnpm --filter @lumni/api test",
+    "test:integration": "pnpm --filter @lumni/shared build && pnpm --filter @lumni/api test:integration",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build",
+    "db:generate": "pnpm --filter @lumni/api db:generate",
+    "db:migrate": "pnpm --filter @lumni/api db:migrate",
+    "db:seed": "pnpm --filter @lumni/shared build && pnpm --filter @lumni/api db:seed",
+    "db:setup": "pnpm db:migrate && pnpm db:seed"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "eslint": "^9.35.0",
+    "typescript-eslint": "^8.42.0",
+    "typescript": "^5.9.2",
+    "@types/node": "^22.18.0",
+    "vitest": "^3.2.4"
+  }
+}

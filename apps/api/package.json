@@ -1,0 +1,36 @@
+{
+  "name": "@lumni/api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "start": "node --env-file=../../.env dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.check.json --noEmit",
+    "test:integration": "node --env-file=../../.env ../../node_modules/vitest/vitest.mjs run --config vitest.config.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file=../../.env src/db/migrate-cli.ts",
+    "db:seed": "tsx --env-file=../../.env src/db/seed-cli.ts",
+    "test": "vitest run --config vitest.unit.config.ts"
+  },
+  "dependencies": {
+    "@lumni/shared": "workspace:*",
+    "cookie-parser": "^1.4.7",
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "zod": "^4.1.0",
+    "luxon": "^3.7.2"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/express": "^5.0.3",
+    "@types/pg": "^8.15.5",
+    "@types/supertest": "^6.0.3",
+    "drizzle-kit": "^0.31.4",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.5",
+    "@types/luxon": "^3.7.1"
+  }
+}
