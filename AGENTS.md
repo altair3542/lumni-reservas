@@ -1,6 +1,6 @@
 # AGENTS.md — Lumni TI | Codex personal
 
-Estas instrucciones rigen el repositorio **completo** al trabajar con Codex. Los briefs `agentes/A0.md` ... `agentes/A10.md` son **tareas**, no agentes autónomos que se ejecuten solos. Este paquete es la raíz del futuro repositorio de aplicación: **A0 debe crear `apps/`, `packages/` y la configuración aquí mismo, sin crear un segundo proyecto**.
+Estas instrucciones rigen el repositorio **completo** al trabajar con Codex. Los briefs `agentes/A0.md` ... `agentes/A10.md` son **tareas**, no agentes autónomos que se ejecuten solos. Por instrucción explícita del usuario, la raíz de aplicación es **`lumni-reservas/`**, carpeta hermana del paquete original `LUMNI_CODEX_PERSONAL/`. Se conservó aquí una copia versionada de la planeación. **A0 debe crear `apps/`, `packages/` y la configuración aquí mismo, sin crear otro proyecto anidado**.
 
 ## Jerarquía obligatoria
 

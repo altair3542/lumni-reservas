@@ -21,3 +21,14 @@ coverage/
 .idea/
 .vscode/
 .tmp/
+
+node_modules/
+.pnpm-store/
+work/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
