@@ -1,6 +1,6 @@
 # Lumni Reservas
 
-Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: base A0 implementada y verificada; revisión humana de G0 pendiente.** Cotizador, confirmación de reservas, administración y chat se incorporan en las fases siguientes.
+Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: base A0 y cotizador backend A1 implementados; revisión de A1 pendiente.** La pantalla del cotizador, confirmación de reservas, administración y chat se incorporan en las fases siguientes.
 
 ## Ejecutar la demo (recomendado para evaluación)
 
@@ -52,7 +52,7 @@ pnpm dev:setup
 pnpm dev
 ```
 
-`dev:setup` diagnostica Node/Docker, crea `.env` desde el ejemplo solo si no existe, inicia únicamente PostgreSQL y aplica migración/seed. No sobrescribe tu configuración. Abre **http://localhost:5173**; API en **http://localhost:3000/api/health**. Detén API/web con `Ctrl+C`.
+`dev:setup` diagnostica Node/Docker, crea `.env` desde el ejemplo solo si no existe, inicia únicamente PostgreSQL y aplica migración/seed. No sobrescribe tu configuración. Abre **http://localhost:5173** (también funciona **http://127.0.0.1:5173**); API en **http://localhost:3000/api/health**. Detén API/web con `Ctrl+C`.
 
 Diagnóstico sin instalar dependencias:
 
@@ -88,11 +88,33 @@ En desarrollo nativo:
 pnpm verify
 ```
 
-`verify` ejecuta lint, tipos, **6 pruebas de arranque + 16 contratos + 9 HTTP sin BD + 16 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
+`verify` ejecuta lint, tipos, **105 pruebas: 6 de arranque + 16 contratos + 50 de API/dominio sin BD + 33 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
 
-La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la revisión humana de G0 continúa pendiente.
+La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la revisión de A1 continúa pendiente.
 
 GitHub Actions está configurado con matriz Node 22/24/26 y un trabajo Docker. La ejecución remota depende de publicar el repositorio; no se afirma que ya haya ocurrido.
+
+## Cotizador backend
+
+`POST /api/quotes` requiere sesión de cliente y el Origin configurado. El administrador obtiene 403. Entrada de ejemplo (elige una fecha futura de lunes a sábado):
+
+```json
+{
+  "roomId": "00000000-0000-4000-8000-000000000201",
+  "date": "2026-10-24",
+  "startTime": "09:00",
+  "durationMinutes": 240,
+  "serviceCodes": ["projector", "coffee"]
+}
+```
+
+Devuelve Quote v1 con base, descuento, recargo, servicios, total COP, `canBook`, motivo y alternativa. El ejemplo de sábado da 160.000 − 16.000 + 36.000 + 30.000 = **210.000 COP**. Una solicitud válida sin cupo responde 200 con `canBook: false`; entradas inválidas o importes inyectados se rechazan con 400. Sala inexistente: 404; servicio retirado del catálogo: 422.
+
+El cálculo admite 60–600 minutos en bloques de 30, descuentos 10 % desde 4h y 20 % desde 8h, y recargo del sábado del 25 % sobre la sala ya descontada. Los extras se suman después. Los componentes se redondean al peso con aritmética entera. Tarifas y servicios salen del catálogo del servidor.
+
+Disponibilidad: solo confirmed/completed ocupan, con rangos `[inicio, fin)`. La alternativa conserva sala, fecha y duración, avanza en bloques de 30 minutos, respeta 07:00–21:00 y no propone instantes pasados. Domingo, pasado o falta de hueco dejan alternativa null. **Cotizar no reserva ni bloquea cupo.** La pantalla para este endpoint se desarrolla en A4.
+
+`QuoteService` en `apps/api/src/quotes/service.ts` es reutilizable por las fases siguientes; `domain.ts` contiene cálculo, calendario y búsqueda puros. Los contratos compartidos y las migraciones se conservaron sin cambios.
 
 ## Estructura y decisiones
 
@@ -113,11 +135,11 @@ docker compose exec postgres psql -U lumni -d lumni_app -c "SELECT conname, pg_g
 
 La confirmación transaccional/idempotente y el worker aún corresponden a A2/A5. Las pruebas actuales de carrera son de restricción en DB; no se atribuye a A0 una ruta HTTP de confirmación que todavía no existe.
 
-La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y scrypt con sal para contraseñas. Las mutaciones exigen Origin. El entorno Docker de demostración permite HTTP local; Secure se activa con NODE_ENV=production y exige HTTPS. A3 ampliará el endurecimiento de auth.
+La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y scrypt con sal para contraseñas. Las mutaciones exigen Origin. En desarrollo HTTP se aceptan localhost y 127.0.0.1 únicamente con el mismo puerto configurado; otros hosts y puertos siguen bloqueados. Producción conserva un único origen exacto. El entorno Docker de demostración permite HTTP local; Secure se activa con NODE_ENV=production y exige HTTPS. A3 ampliará el endurecimiento de auth.
 
 ## Alcance pendiente y uso de IA
 
-Pendientes: A1 cotizador; A2 API de borradores/confirmación; A3 admin/endurecimiento; A4 wizard/UI completa; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
+Pendientes: A2 API de borradores/confirmación; A3 admin/endurecimiento; A4 wizard/UI completa; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
 
 Codex (GPT-6) asistió en A0 y en la corrección de portabilidad. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 

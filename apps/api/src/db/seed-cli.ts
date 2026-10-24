@@ -8,4 +8,6 @@ try {
   if (!clientPassword || !adminPassword) throw new Error('Define las contraseñas demo en .env');
   await seedDatabase(database, { clientPassword, adminPassword });
   console.log('Seed idempotente: 2 usuarios, 3 salas, 2 servicios y 1 draft demo');
-} finally { await database.pool.end(); }
+} finally {
+  await database.pool.end();
+}

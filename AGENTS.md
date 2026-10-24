@@ -2,7 +2,7 @@
 
 Esta carpeta contiene la aplicación. La planeación, los briefs A0–A10, referencias y registros de trabajo se mantienen en la carpeta hermana `../LUMNI_CODEX_PERSONAL/`. Consulta allí `AGENTS.md`, `PROGRESO.md` y el brief solicitado antes de implementar una fase; no copies ese material al repositorio de aplicación. La ejecución, instalación y pruebas de la app son independientes de esa carpeta.
 
-- Ejecuta únicamente el alcance autorizado por el usuario; A1 aún no está autorizada.
+- Ejecuta únicamente el alcance autorizado por el usuario; A1 está implementada y pendiente de revisión; no iniciar A2 sin nueva autorización.
 - Los commits y sus mensajes son manuales del usuario. No ejecutar git add, commit, rebase ni publicar cambios por iniciativa propia.
 - Conserva cambios ajenos. No reescribir historial ni limpiar archivos de forma destructiva.
 - Usa TypeScript estricto, React, Express y PostgreSQL 16. Dinero entero COP y zona America/Bogota. Conserva la exclusión GiST de reservas y los contratos compartidos.

@@ -1,0 +1,9 @@
+node_modules/
+.pnpm-store/
+**/dist/
+coverage/
+work/
+apps/api/drizzle/
+pnpm-lock.yaml
+.env
+.env.*

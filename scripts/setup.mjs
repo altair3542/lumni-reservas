@@ -5,10 +5,18 @@ import { reportEnvironment } from './doctor.mjs';
 if (!reportEnvironment()) process.exit(1);
 if (!existsSync('.env')) copyFileSync('.env.example', '.env', constants.COPYFILE_EXCL);
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-for (const [command, args] of [['docker', ['compose', 'up', '-d', '--wait', 'postgres']], [pnpm, ['db:setup']]]) {
-  const result = spawnSync(command, args, { stdio: 'inherit', shell: process.platform === 'win32' });
+for (const [command, args] of [
+  ['docker', ['compose', 'up', '-d', '--wait', 'postgres']],
+  [pnpm, ['db:setup']],
+]) {
+  const result = spawnSync(command, args, {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
   if (result.error || result.status !== 0) {
-    console.error('Preparación interrumpida. Revisa el error anterior; no se inició la aplicación.');
+    console.error(
+      'Preparación interrumpida. Revisa el error anterior; no se inició la aplicación.',
+    );
     process.exit(result.status || 1);
   }
 }
