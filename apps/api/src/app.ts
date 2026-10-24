@@ -100,16 +100,14 @@ export function createApp({
   });
   const errors: ErrorRequestHandler = (err: unknown, req, res, _next) => {
     if (err instanceof z.ZodError) {
-      res
-        .status(400)
-        .json({
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'Revisa los datos enviados',
-            fieldErrors: z.flattenError(err).fieldErrors,
-            requestId: req.requestId,
-          },
-        });
+      res.status(400).json({
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Revisa los datos enviados',
+          fieldErrors: z.flattenError(err).fieldErrors,
+          requestId: req.requestId,
+        },
+      });
       return;
     }
     if (err instanceof HttpError) {
@@ -119,35 +117,29 @@ export function createApp({
       return;
     }
     if (err instanceof SyntaxError && 'body' in err) {
-      res
-        .status(400)
-        .json({
-          error: { code: 'INVALID_JSON', message: 'JSON inválido', requestId: req.requestId },
-        });
+      res.status(400).json({
+        error: { code: 'INVALID_JSON', message: 'JSON inválido', requestId: req.requestId },
+      });
       return;
     }
     if (err && typeof err === 'object' && 'type' in err && err.type === 'entity.too.large') {
-      res
-        .status(413)
-        .json({
-          error: {
-            code: 'BODY_TOO_LARGE',
-            message: 'Solicitud demasiado grande',
-            requestId: req.requestId,
-          },
-        });
-      return;
-    }
-    logError(req.requestId);
-    res
-      .status(500)
-      .json({
+      res.status(413).json({
         error: {
-          code: 'INTERNAL_ERROR',
-          message: 'No pudimos completar la solicitud',
+          code: 'BODY_TOO_LARGE',
+          message: 'Solicitud demasiado grande',
           requestId: req.requestId,
         },
       });
+      return;
+    }
+    logError(req.requestId);
+    res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'No pudimos completar la solicitud',
+        requestId: req.requestId,
+      },
+    });
   };
   app.use(errors);
   return app;

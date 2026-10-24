@@ -74,6 +74,15 @@ También puedes usar PostgreSQL 16 propio: crea bases separadas `lumni_app`, `lu
 
 Docker apagado o ausente es un prerrequisito del equipo. No puede garantizarse desde un repositorio; por eso se declara y se diagnostica antes del arranque.
 
+## Formato del código
+
+```sh
+pnpm format
+pnpm format:check
+```
+
+El proyecto fija Prettier y su configuración para mantener indentación de dos espacios, JSX y CSS legibles y un estilo consistente. `pnpm verify` comprueba el formato antes de lint y los tests. Los archivos generados, migraciones, cachés y dependencias quedan excluidos.
+
 ## Verificar
 
 Dentro de Docker, con la demo ya iniciada:

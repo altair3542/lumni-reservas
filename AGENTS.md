@@ -9,3 +9,5 @@ Esta carpeta contiene la aplicación. La planeación, los briefs A0–A10, refer
 - Node soportado: 22.18+, 24 y 26; pnpm 11.25.0. Demo: ./scripts/demo.sh. Desarrollo: pnpm install --frozen-lockfile, pnpm dev:setup, pnpm dev.
 - Verificación: pnpm verify, o docker compose run --rm app pnpm verify. La integración exige PostgreSQL real en una base de pruebas aislada.
 - No incluir secretos, material de planeación ni registros personales. No atribuir pruebas o revisiones humanas que no ocurrieron.
+
+- Mantén el código legible desde cada entrega: ejecuta pnpm format y pnpm format:check. No pospongas el formato de TS/TSX/CSS ni comprimas bloques manualmente. La configuración de Prettier es compartida y verify la comprueba.

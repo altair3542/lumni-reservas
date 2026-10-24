@@ -142,9 +142,7 @@ describe('POST /api/quotes con sesión y PostgreSQL real', () => {
     async (status) => {
       await occupy({ status });
       await occupy({ start: '10:30', end: '12:00' });
-      const response = await (
-        await client()
-      )
+      const response = await (await client())
         .post('/api/quotes')
         .set('Origin', origin)
         .send(input)
@@ -166,9 +164,7 @@ describe('POST /api/quotes con sesión y PostgreSQL real', () => {
       [ownerId, await hashPassword('OtroClienteDemo2026!')],
     );
     await occupy({ ownerId });
-    const response = await (
-      await client()
-    )
+    const response = await (await client())
       .post('/api/quotes')
       .set('Origin', origin)
       .send(input)
@@ -179,9 +175,7 @@ describe('POST /api/quotes con sesión y PostgreSQL real', () => {
   it.each(['draft', 'cancelled'] as const)('%s no ocupa; otras salas tampoco', async (status) => {
     await occupy({ status });
     await occupy({ roomId: '00000000-0000-4000-8000-000000000202' });
-    const response = await (
-      await client()
-    )
+    const response = await (await client())
       .post('/api/quotes')
       .set('Origin', origin)
       .send(input)

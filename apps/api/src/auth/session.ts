@@ -21,13 +21,11 @@ export function createSessions(
 ): { issue: (userId: string) => Promise<string>; required: RequestHandler } {
   const issue = async (userId: string) => {
     const token = randomBytes(32).toString('base64url');
-    await database.db
-      .insert(sessions)
-      .values({
-        tokenHash: tokenHash(token),
-        userId,
-        expiresAt: new Date(now().getTime() + config.sessionTtlMs),
-      });
+    await database.db.insert(sessions).values({
+      tokenHash: tokenHash(token),
+      userId,
+      expiresAt: new Date(now().getTime() + config.sessionTtlMs),
+    });
     return token;
   };
   const required: RequestHandler = async (req, _res, next) => {
