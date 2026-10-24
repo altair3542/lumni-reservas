@@ -4,14 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=../../.env src/index.ts",
-    "start": "node --env-file=../../.env dist/index.js",
+    "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+    "start": "node --env-file-if-exists=../../.env dist/index.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.check.json --noEmit",
-    "test:integration": "node --env-file=../../.env ../../node_modules/vitest/vitest.mjs run --config vitest.config.ts",
+    "test:integration": "node --env-file-if-exists=../../.env ../../node_modules/vitest/vitest.mjs run --config vitest.config.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=../../.env src/db/migrate-cli.ts",
-    "db:seed": "tsx --env-file=../../.env src/db/seed-cli.ts",
+    "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate-cli.ts",
+    "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed-cli.ts",
     "test": "vitest run --config vitest.unit.config.ts"
   },
   "dependencies": {

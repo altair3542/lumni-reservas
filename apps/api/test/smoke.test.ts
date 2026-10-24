@@ -4,7 +4,7 @@ import { createApp } from '../src/app.js';
 import { readConfig } from '../src/config.js';
 import { errorResponseSchema, loginResponseSchema, roomListSchema, serviceListSchema } from '@lumni/shared';
 import { createSessions, requireRole } from '../src/auth/session.js';
-import express from 'express';
+import express, { type ErrorRequestHandler } from 'express';
 import cookieParser from 'cookie-parser';
 import { seedDatabase } from '../src/db/seed.js';
 import { demoPasswords, openTestDatabase, prepareDatabase, resetDatabase } from './helpers.js';
@@ -84,6 +84,8 @@ describe('API real + sesiones PostgreSQL', () => {
     const auth = createSessions(database, config, () => clock);
     const harness = express().use(cookieParser());
     harness.get('/admin', auth.required, requireRole('admin'), (_req, res) => res.sendStatus(204));
+    const errors: ErrorRequestHandler = (err, _req, res, _next) => { res.sendStatus(err.status); };
+    harness.use(errors);
     const clientLogin = await request(app).post('/api/auth/login').set('Origin', origin).send(credentials).expect(200);
     await request(harness).get('/admin').set('Cookie', cookieOf(clientLogin).split(';')[0]!).expect(403);
     const adminLogin = await request(app).post('/api/auth/login').set('Origin', origin).send({ email: 'admin@example.com', password: demoPasswords.adminPassword }).expect(200);

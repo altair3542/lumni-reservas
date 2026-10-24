@@ -49,6 +49,7 @@ export function createApp({ database, config, now = () => new Date(), logError =
   });
   app.get('/api/rooms', auth.required, async (_req, res) => res.json({ items: await database.db.select().from(rooms).orderBy(rooms.capacity) }));
   app.get('/api/services', auth.required, async (_req, res) => res.json({ items: await database.db.select().from(services).orderBy(services.code) }));
+  if (config.webDistDir) app.use(express.static(config.webDistDir));
   app.use((_req, _res) => { throw new HttpError(404, 'NOT_FOUND', 'Ruta no encontrada'); });
   const errors: ErrorRequestHandler = (err: unknown, req, res, _next) => {
     if (err instanceof z.ZodError) {
