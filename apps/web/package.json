@@ -6,14 +6,22 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:e2e": "playwright test --config playwright.config.ts"
   },
   "dependencies": {
     "@lumni/shared": "workspace:*",
+    "@tanstack/react-query": "5.104.5",
+    "luxon": "3.7.2",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-hook-form": "7.91.0",
+    "react-router-dom": "7.18.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/luxon": "3.7.1",
     "@types/react": "^18.3.24",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^5.0.2",

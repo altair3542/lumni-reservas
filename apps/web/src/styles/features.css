@@ -1,0 +1,494 @@
+.room-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 30px;
+}
+.room-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 19px;
+  text-align: left;
+  color: var(--green);
+  min-width: 0;
+}
+.room-card.selected {
+  border-color: #638947;
+  box-shadow: 0 0 0 2px #e0ebd0;
+}
+.room-card:hover {
+  border-color: #8ba372;
+}
+.room-card strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.capacity {
+  font-size: 10px;
+  white-space: nowrap;
+  color: #66805a;
+}
+.room-description {
+  display: block;
+  font-size: 11px;
+  color: #788776;
+  margin: 8px 0 14px;
+}
+.room-rate {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+.room-rate small {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.room-illustration {
+  display: block;
+  height: 91px;
+  position: relative;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  background: #f0f2e8;
+}
+.room-illustration::before {
+  content: '';
+  position: absolute;
+  width: 53%;
+  height: 55%;
+  left: 23%;
+  top: 15%;
+  background: #c8d8ae;
+  border-radius: 6px;
+  transform: skewY(-8deg);
+}
+.room-illustration::after {
+  content: '';
+  position: absolute;
+  left: 23%;
+  top: 54%;
+  height: 24%;
+  width: 53%;
+  border-left: 3px solid #859879;
+  border-right: 3px solid #859879;
+}
+.room-illustration i {
+  position: absolute;
+  width: 17px;
+  height: 21px;
+  background: #e2c7a5;
+  border: 2px solid #b8a689;
+  border-radius: 6px 6px 3px 3px;
+  z-index: 1;
+  top: 51%;
+  left: 17%;
+  transform: rotate(-10deg);
+}
+.room-illustration i:nth-child(2) {
+  left: 45%;
+  top: 64%;
+  transform: rotate(-4deg);
+}
+.room-illustration i:nth-child(3) {
+  left: 76%;
+  top: 34%;
+  transform: rotate(-10deg);
+}
+.size-1 {
+  background: #edf0e7;
+}
+.size-1::before {
+  width: 66%;
+  left: 17%;
+  background: #b6c9bb;
+}
+.size-1::after {
+  width: 66%;
+  left: 17%;
+}
+.size-2 {
+  background: #f2eee6;
+}
+.size-2::before {
+  background: #c7ccb0;
+  width: 70%;
+  left: 15%;
+}
+.size-2::after {
+  width: 70%;
+  left: 15%;
+}
+.service-options {
+  margin-top: 14px;
+}
+.service-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid #eef0e8;
+  margin: 0;
+  font-size: 12px;
+  cursor: pointer;
+}
+.service-option input {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+  accent-color: #4b703c;
+  margin: 0;
+  flex-shrink: 0;
+}
+.service-option span {
+  flex: 1;
+}
+.service-option strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+.service-option small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+}
+.service-option b {
+  font-size: 12px;
+  font-weight: 500;
+}
+.price-card {
+  background: #eef2e5;
+  border-color: #dce5ce;
+  position: sticky;
+  top: 24px;
+}
+.price-card h2 {
+  font-size: 27px;
+  max-width: 250px;
+}
+.breakdown {
+  margin: 25px 0 0;
+}
+.breakdown > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 13px 0;
+  font-size: 12px;
+  color: #61735b;
+}
+.breakdown dd {
+  margin: 0;
+  color: var(--green);
+  font-weight: 550;
+  text-align: right;
+  white-space: nowrap;
+}
+.breakdown .total {
+  border-top: 1px solid #d8e1ce;
+  padding-top: 19px;
+  margin-top: 21px;
+  color: var(--green);
+}
+.breakdown .total dt {
+  font-size: 14px;
+  font-weight: 600;
+}
+.breakdown .total dd {
+  font-size: 31px;
+  letter-spacing: -1.4px;
+  font-weight: 600;
+}
+.breakdown small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 1px;
+  font-weight: 400;
+}
+.quote-placeholder {
+  padding: 33px 0;
+  color: #75876a;
+  font-size: 13px;
+}
+.quote-placeholder > span {
+  display: block;
+  font-size: 40px;
+  color: #8aa06d;
+  margin-bottom: 17px;
+}
+.quote-placeholder small {
+  display: block;
+  margin-top: 25px;
+  font-size: 10px;
+  line-height: 1.9;
+  color: #7b8d70;
+}
+.alternative {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eccfc2;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 26px;
+}
+.steps button {
+  background: none;
+  border: 1px solid #e0e5d8;
+  border-radius: 10px;
+  padding: 14px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #78856d;
+  font-size: 12px;
+  text-align: left;
+}
+.steps button span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  background: #e8eddf;
+  border-radius: 50%;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.steps button.current {
+  color: var(--green);
+  border-color: #94ae79;
+  background: #eef3e6;
+  font-weight: 600;
+}
+.steps button.current span {
+  background: var(--green);
+  color: #fff;
+}
+.summary .details {
+  margin-top: 23px;
+}
+.details {
+  margin: 15px 0 20px;
+}
+.details > div {
+  padding: 13px 0;
+  border-bottom: 1px solid #edf0e7;
+}
+.details dt {
+  font-size: 10px;
+  color: #819075;
+  margin-bottom: 4px;
+}
+.details dd {
+  font-size: 13px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.details dd small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+.summary .muted {
+  font-size: 11px;
+  margin-top: 18px;
+}
+.reference {
+  font-size: 10px;
+  color: #8d9985;
+  overflow-wrap: anywhere;
+  margin-top: 20px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 30px;
+  padding: 4px 10px;
+  font-size: 10px;
+  white-space: nowrap;
+  font-weight: 550;
+}
+.badge.draft,
+.badge.pending {
+  background: #f4eedc;
+  color: #86692c;
+}
+.badge.confirmed,
+.badge.sent {
+  background: #e9f2df;
+  color: #486638;
+}
+.badge.cancelled,
+.badge.failed {
+  background: #faebe5;
+  color: #974e3e;
+}
+.badge.completed {
+  background: #e7eeec;
+  color: #486b63;
+}
+.confirm-card {
+  margin-top: 20px;
+}
+.booking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.booking-grid .card + .card {
+  margin-top: 0;
+}
+.booking-card h2 {
+  font-size: 21px;
+  margin-top: 24px;
+}
+.booking-card-bottom {
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.empty {
+  padding: 42px 20px;
+  text-align: center;
+}
+.empty > span {
+  font-size: 42px;
+  color: #9aac83;
+}
+.empty h2 {
+  font-size: 22px;
+}
+.empty .button {
+  margin-top: 25px;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #112d25aa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  overflow: auto;
+}
+.modal {
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 70px #0e241a30;
+  max-height: 90vh;
+  overflow: auto;
+}
+.modal h2 {
+  margin-top: 0;
+}
+.modal p {
+  font-size: 13px;
+  color: var(--muted);
+}
+.modal-backdrop .login-card {
+  max-width: 450px;
+}
+.modal-backdrop .login-card h2 {
+  margin: 12px 0;
+}
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+.filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 21px 25px;
+  border-bottom: 1px solid var(--line);
+}
+.filters label {
+  margin: 0;
+  min-width: 165px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.filters select {
+  font-size: 12px;
+  min-height: 40px;
+  padding: 9px 11px;
+}
+.table-card > .notice,
+.table-card > .loading {
+  margin: 20px;
+}
+.table-scroll {
+  overflow: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+}
+th {
+  background: #fafbf7;
+  color: #7a886f;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+td {
+  padding: 18px 22px;
+  border-bottom: 1px solid #edf0e8;
+  vertical-align: middle;
+}
+td strong {
+  font-weight: 550;
+  display: block;
+}
+td small {
+  display: block;
+  font-size: 10px;
+  color: #7b8972;
+  margin-top: 4px;
+}
+td .inline-link {
+  white-space: nowrap;
+}
+tbody tr:hover {
+  background: #fafcf7;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 25px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.pagination .button {
+  font-size: 10px;
+  min-height: 32px;
+  padding: 7px 11px;
+}
+.email-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.9;
+  color: #496044;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-top: 22px;
+}

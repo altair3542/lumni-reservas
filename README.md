@@ -1,6 +1,6 @@
 # Lumni Reservas
 
-Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: base, cotizador, reservas y administración implementados en el backend.** La interfaz sigue mostrando acceso y catálogo; el cotizador visual, el formulario de reserva, la administración y el chat se incorporan después.
+Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: cotizador, reservas en tres pasos y administración disponibles desde la interfaz.** La confirmación crea un evento de correo pendiente; el worker de procesamiento y el chat se incorporan después.
 
 ## Ejecutar la demo (recomendado para evaluación)
 
@@ -97,11 +97,53 @@ En desarrollo nativo:
 pnpm verify
 ```
 
-`verify` ejecuta lint, tipos, **172 pruebas: 6 de arranque + 18 contratos + 72 de API/dominio sin BD + 76 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
+`verify` ejecuta lint, tipos, **178 pruebas: 6 de arranque + 18 contratos + 72 de API/dominio sin BD + 6 de cliente web/fechas + 76 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
 
-La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la API de administración queda lista para revisión.
+La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la interfaz de A4 queda lista para revisión. Los recorridos de navegador se ejecutan por separado.
 
 GitHub Actions está configurado con matriz Node 22/24/26 y un trabajo Docker. La ejecución remota depende de publicar el repositorio; no se afirma que ya haya ocurrido.
+
+## Recorrer la aplicación
+
+Cliente (`cliente@example.com` / `ClienteDemo2026!`):
+
+1. En **Reservar espacio**, elige sala, fecha futura de lunes a sábado, hora, duración y servicios. Consulta disponibilidad y desglose. Si está ocupado, puedes revisar la alternativa real que devuelve el servidor.
+2. Pulsa **Continuar con esta reserva**. Revisa y guarda contacto, sala/horario y servicios. Se admiten cero servicios. Cada paso espera confirmación del servidor; mientras se guarda se bloquea avanzar.
+3. Revisa el precio guardado y pulsa **Confirmar reserva**. El diálogo requiere confirmación explícita. Si alguien ocupó el horario, se ofrece editar/recotizar; la cotización nunca bloquea cupo.
+4. En **Mis reservas**, retoma borradores y consulta estados. Recargar, cerrar navegador o limpiar localStorage no borra los pasos guardados. Los campos todavía sin guardar se distinguen y salir requiere elegir si se descartan.
+
+Administrador (`admin@example.com` / `AdminDemo2026!`):
+
+- **Reservas**: pagina, combina filtros de sala/estado y abre detalles. Cancela con motivo o marca como completada cuando ya terminó. Listado y detalle se actualizan con los datos del servidor.
+- **Correos**: filtra por estado, revisa intentos/errores y consulta contenido y captura, si existe. Hasta implementar el worker, las confirmaciones normales permanecen pendientes.
+
+Navegación con rutas hash, por ejemplo `/#/salas` y `/#/reservas/<id>`: se pueden recargar enlaces directos tanto con Vite como con la demo Docker, sin exigir configuración de fallback de Express. Cliente y admin tienen navegación separada; los permisos reales siguen en el backend.
+
+El horario siempre se presenta en America/Bogota, también si el equipo está en otra zona. Fallos de red conservan la edición; una versión obsoleta requiere cargar explícitamente la versión del servidor antes de sobrescribir. Sesión invalidada permite volver a ingresar conservando la edición en memoria para la misma cuenta. Al cambiar de cuenta se limpia la caché privada. No hay tokens ni fuente de verdad del draft en localStorage.
+
+## Pruebas de navegador
+
+Además de `pnpm verify`, hay **10 recorridos Playwright** con PostgreSQL real: cliente→confirmación→admin/cancelar, retoma en navegador nuevo, red, versiones, colisión/alternativa, sesión, cambios sin guardar, paginación/filtros/403, móvil y estados/capturas de correo. Se ejecutan con zona de navegador Pacific/Auckland para comprobar la presentación en Colombia.
+
+Usa una demo **aislada**, que no contenga tus datos de desarrollo. En macOS/Linux:
+
+```sh
+APP_PORT=8097 POSTGRES_PORT=55452 docker compose --project-name lumni-e2e up --build -d --wait
+pnpm --filter @lumni/web exec playwright install chromium
+E2E_BASE_URL=http://localhost:8097 E2E_COMPOSE_PROJECT=lumni-e2e pnpm test:e2e
+```
+
+En PowerShell, establece esas variables con `$env:NOMBRE="valor"` antes del comando. El runner exige proyecto de pruebas y comprueba su puerto publicado antes de crear fixtures. Los correos failed/sent/capturados de esas pruebas son fixtures explícitos; no representan un worker real ni envíos externos. No hay endpoints de producción para forzar fallos.
+
+Resultados y capturas de fallo van al directorio temporal del sistema, o a `E2E_OUTPUT_DIR` si lo defines. No se guardan cookies ni trazas de autenticación. Puedes usar `PLAYWRIGHT_CHROMIUM_PATH` para un Chromium instalado; normalmente Playwright usa su navegador compatible descargado por el comando anterior.
+
+Para repetir toda la suite con datos nuevos, recrea únicamente ese proyecto aislado. Al terminar:
+
+```sh
+docker compose --project-name lumni-e2e down --volumes
+```
+
+GitHub Actions incluye la ejecución E2E en el trabajo Docker, con instalación de Chromium. La configuración no equivale a una ejecución remota comprobada.
 
 ## Cotizador backend
 
@@ -121,7 +163,7 @@ Devuelve Quote v1 con base, descuento, recargo, servicios, total COP, `canBook`,
 
 El cálculo admite 60–600 minutos en bloques de 30, descuentos 10 % desde 4h y 20 % desde 8h, y recargo del sábado del 25 % sobre la sala ya descontada. Los extras se suman después. Los componentes se redondean al peso con aritmética entera. Tarifas y servicios salen del catálogo del servidor.
 
-Disponibilidad: solo confirmed/completed ocupan, con rangos `[inicio, fin)`. La alternativa conserva sala, fecha y duración, avanza en bloques de 30 minutos, respeta 07:00–21:00 y no propone instantes pasados. Domingo, pasado o falta de hueco dejan alternativa null. **Cotizar no reserva ni bloquea cupo.** La pantalla para este endpoint se desarrolla en A4.
+Disponibilidad: solo confirmed/completed ocupan, con rangos `[inicio, fin)`. La alternativa conserva sala, fecha y duración, avanza en bloques de 30 minutos, respeta 07:00–21:00 y no propone instantes pasados. Domingo, pasado o falta de hueco dejan alternativa null. **Cotizar no reserva ni bloquea cupo.** La interfaz ofrece revisar la alternativa antes de continuar.
 
 `QuoteService` en `apps/api/src/quotes/service.ts` es reutilizable por las fases siguientes; `domain.ts` contiene cálculo, calendario y búsqueda puros. A2 reutiliza este servicio y la misma validación de calendario. Las migraciones se conservaron sin cambios.
 
@@ -159,7 +201,7 @@ La confirmación bloquea la propia fila y usa el snapshot persistido, aunque cam
 
 Si otra reserva gana el horario, la exclusión GiST provoca rollback completo; se responde 409 `ROOM_UNAVAILABLE` con `error.suggestedSlot` (o null), calculado después del rollback. El perdedor conserva su draft. Los horarios contiguos y las salas distintas sí pueden confirmarse simultáneamente.
 
-El evento de correo queda `pending`, sin enviar mensajes ni crear capturas todavía. El worker de A5 procesará esos eventos. La interfaz de estos endpoints se incorpora en A4; la pantalla actual no cambia con A2.
+El evento de correo queda `pending`, sin enviar mensajes ni crear capturas todavía. El worker de A5 procesará esos eventos. La interfaz permite guardar cada paso, retomar desde Mis reservas y confirmar mediante un botón explícito.
 
 ## Administración por API
 
@@ -189,12 +231,12 @@ console.log(respuestaAdmin.status, await respuestaAdmin.json());
 
 Para ver un detalle, usa el ID obtenido en `/api/admin/bookings/<id>`. La cancelación es una operación real: envía motivo y la versión actual que muestra ese detalle. Si cambia la versión, vuelve a cargar antes de reintentar.
 
-Los correos reales creados hasta esta fase siguen pending. La inspección de failed/sent/capturas se verifica con fixtures de PostgreSQL; el worker que los producirá se incorpora en A5. El panel visual de administración se incorpora en A4.
+Los correos reales creados hasta esta fase siguen pending. La inspección de failed/sent/capturas se verifica con fixtures de PostgreSQL; el worker que los producirá se incorpora en A5. El panel visual permite consultar estos estados y el contenido de cada confirmación; nunca inserta el HTML del correo como contenido ejecutable.
 
 ## Estructura y decisiones
 
 - `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador, reservas y administración autenticadas.
-- `apps/web`: React 18/Vite, pantalla de acceso y catálogo; cliente API con validación de respuestas.
+- `apps/web`: React 18/Vite, rutas por rol, cotizador, reservas/wizard y administración; cliente API validado, React Hook Form, TanStack Query, CSS por responsabilidad y carga diferida de pantallas.
 - `packages/shared`: contratos Zod estrictos de login, quote, draft, confirmación/versiones, admin, correo, extracción IA y errores HTTP.
 - `apps/api/src/db` y `apps/api/drizzle`: diez tablas, migraciones Drizzle/SQL, checks, claves únicas y seed.
 - `Dockerfile`, `docker-compose.yml`, `infra/docker`: Node controlado dentro de la imagen, web compilada servida por Express, PostgreSQL 16 y arranque idempotente sin depender de .env del host.
@@ -214,8 +256,8 @@ La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y
 
 ## Alcance pendiente y uso de IA
 
-Pendientes: revisión de A3; A4 wizard/UI completa; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
+Pendientes: revisión de A4; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
 
-Codex asistió en la base, cotizador, API de reservas/administración y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
+Codex asistió en la base, cotizador, reservas/administración, interfaz y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 
 Las instrucciones de trabajo de esta aplicación están en `AGENTS.md`. La planeación, los briefs y las referencias se mantienen fuera del repositorio y no se necesitan para instalar, ejecutar o probar la aplicación. Los commits y sus mensajes son manuales del usuario; no se hace staging, commit ni publicación automática.

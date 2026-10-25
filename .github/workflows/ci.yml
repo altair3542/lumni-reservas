@@ -1,4 +1,4 @@
-name: Verify A0
+name: Verify Lumni
 on: [push, pull_request]
 permissions:
   contents: read
@@ -44,10 +44,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22.18.0'
-      - run: docker compose up --build -d --wait
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - run: docker compose --project-name lumni-e2e up --build -d --wait
       - run: node scripts/smoke-demo.mjs
-      - run: docker compose run --rm app pnpm verify
+      - run: docker compose --project-name lumni-e2e run --rm app pnpm verify
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @lumni/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+        env:
+          E2E_BASE_URL: http://localhost:8080
+          E2E_COMPOSE_PROJECT: lumni-e2e
+          E2E_OUTPUT_DIR: ${{ runner.temp }}/lumni-e2e-results
       - if: failure()
-        run: docker compose logs
+        run: docker compose --project-name lumni-e2e logs
       - if: always()
-        run: docker compose down -v
+        run: docker compose --project-name lumni-e2e down -v

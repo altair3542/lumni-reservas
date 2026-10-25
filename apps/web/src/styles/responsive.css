@@ -1,0 +1,289 @@
+@media (min-width: 1600px) {
+  .sidebar {
+    width: 260px;
+  }
+  .workspace-body {
+    margin-left: 260px;
+  }
+}
+@media (max-width: 1100px) {
+  .sidebar {
+    width: 195px;
+    padding: 30px 17px;
+  }
+  .workspace-body {
+    margin-left: 195px;
+  }
+  .brand-caption {
+    display: none;
+  }
+  .page-content {
+    padding: 32px 24px 50px;
+  }
+  .room-cards {
+    gap: 12px;
+  }
+  .room-card {
+    padding: 14px;
+  }
+  .room-card .row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card {
+    padding: 23px;
+  }
+  .table-card {
+    padding: 0;
+  }
+  .two-column {
+    gap: 18px;
+  }
+  .steps button {
+    font-size: 10px;
+  }
+  .room-description {
+    min-height: 35px;
+  }
+  .heading-note {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .workspace {
+    display: block;
+  }
+  .sidebar {
+    position: static;
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+  }
+  .brand {
+    font-size: 25px;
+  }
+  .brand-mark {
+    height: 29px;
+    width: 25px;
+    font-size: 25px;
+  }
+  .nav-caption,
+  .sidebar-note {
+    display: none;
+  }
+  .sidebar nav {
+    grid-column: 1/-1;
+    grid-row: 2;
+    flex-direction: row;
+    gap: 8px;
+  }
+  .nav-link {
+    font-size: 12px;
+    padding: 9px 12px;
+    flex: 1;
+  }
+  .nav-link span {
+    font-size: 17px;
+  }
+  .user-menu {
+    padding: 0;
+    border: 0;
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .user-menu > div:not(.avatar) {
+    display: none;
+  }
+  .workspace-body {
+    margin-left: 0;
+  }
+  .topbar {
+    height: 48px;
+    padding: 0 20px;
+    font-size: 10px;
+  }
+  .service-status {
+    font-size: 9px;
+  }
+  .page-content {
+    padding: 29px 20px 40px;
+    min-height: 60vh;
+  }
+  .page-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 17px;
+    margin-bottom: 25px;
+  }
+  h1 {
+    font-size: 30px;
+    letter-spacing: -1.3px;
+  }
+  .room-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .room-card {
+    display: grid;
+    grid-template-columns: 85px 1fr;
+    column-gap: 15px;
+    padding: 13px;
+  }
+  .room-illustration {
+    grid-row: 1/4;
+    height: 82px;
+    margin: 0;
+  }
+  .room-card .row {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+  .room-card strong {
+    font-size: 13px;
+  }
+  .room-description {
+    margin: 5px 0;
+    min-height: 0;
+    font-size: 10px;
+  }
+  .room-rate {
+    font-size: 16px;
+  }
+  .capacity {
+    font-size: 9px;
+  }
+  .two-column {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .card {
+    padding: 24px;
+  }
+  .table-card {
+    padding: 0;
+  }
+  .price-card {
+    position: static;
+  }
+  .price-card h2 {
+    max-width: none;
+    font-size: 24px;
+  }
+  .quote-placeholder {
+    padding: 16px 0;
+  }
+  .quote-placeholder > span {
+    font-size: 30px;
+    margin-bottom: 9px;
+  }
+  .quote-placeholder small {
+    margin-top: 15px;
+  }
+  .steps {
+    gap: 6px;
+  }
+  .steps button {
+    padding: 10px 7px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .full {
+    grid-column: auto;
+  }
+  .section-bar {
+    align-items: flex-start;
+  }
+  .booking-grid {
+    grid-template-columns: 1fr;
+  }
+  .booking-card h2 {
+    margin-top: 18px;
+  }
+  .booking-card-bottom {
+    margin-top: 15px;
+    padding-top: 18px;
+  }
+  .pagination {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  .filters {
+    padding: 18px;
+    gap: 12px;
+  }
+  .filters label {
+    min-width: 0;
+    flex: 1 1 130px;
+  }
+  .filters select {
+    width: 100%;
+  }
+  td,
+  th {
+    padding: 14px 17px;
+  }
+  .login-page {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 45px 24px;
+    min-height: 100vh;
+  }
+  .login-intro h1 {
+    font-size: 40px;
+    margin: 18px 0;
+  }
+  .login-intro p {
+    font-size: 12px;
+  }
+  .login-art {
+    display: none;
+  }
+  .login-intro .location {
+    display: inline-block;
+    margin-top: 16px;
+  }
+  .login-card {
+    max-width: none;
+    padding: 28px;
+  }
+  .modal-backdrop {
+    padding: 17px;
+  }
+  .modal {
+    max-height: 85vh;
+  }
+  footer {
+    font-size: 9px;
+    margin: 0 20px;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 14px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto;
+    transition: none !important;
+  }
+}
+
+.auth-modal {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}

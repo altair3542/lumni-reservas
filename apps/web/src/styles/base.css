@@ -1,0 +1,156 @@
+:root {
+  font-family: 'DM Sans', 'Avenir Next', system-ui, sans-serif;
+  color: #173e32;
+  background: #f5f6ef;
+  font-synthesis: none;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
+  --green: #173e32;
+  --lime: #d6eb9c;
+  --muted: #697a71;
+  --line: #dfe5d9;
+  --white: #fff;
+  --danger: #a13c2f;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1,
+h2,
+h3 {
+  font-family: 'Manrope', 'Avenir Next', system-ui, sans-serif;
+}
+h1 {
+  font-size: clamp(28px, 3.2vw, 44px);
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -1.8px;
+}
+h2 {
+  font-size: 23px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.7px;
+  margin: 12px 0;
+}
+h3 {
+  font-size: 15px;
+}
+small {
+  font-size: 12px;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #6d953b;
+  outline-offset: 4px;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+  margin-top: 20px;
+}
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid #cbd6c8;
+  background: #fff;
+  color: var(--green);
+  border-radius: 9px;
+  padding: 12px 13px;
+  margin-top: 8px;
+  min-height: 46px;
+  outline: none;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #648444;
+  box-shadow: 0 0 0 3px #d6eb9c55;
+}
+textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #84948a;
+}
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.1px;
+  color: #627b54;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.between {
+  justify-content: space-between;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.full {
+  grid-column: 1/-1;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
