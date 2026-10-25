@@ -5,7 +5,10 @@ const envSchema = z.object({
   HOST: z.enum(['127.0.0.1', '0.0.0.0']).default('127.0.0.1'),
   WEB_DIST_DIR: z.string().min(1).optional(),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  WEB_ORIGIN: z.url().default('http://localhost:5173'),
+  WEB_ORIGIN: z
+    .url()
+    .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol))
+    .default('http://localhost:5173'),
   SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(12),
 });
 export function readConfig(env: NodeJS.ProcessEnv = process.env) {
@@ -22,7 +25,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
     databaseUrl: v.DATABASE_URL,
     port: v.PORT,
     webOrigin: new URL(v.WEB_ORIGIN).origin,
-    secureCookies: v.NODE_ENV === 'production',
+    secureCookies: v.NODE_ENV === 'production' || new URL(v.WEB_ORIGIN).protocol === 'https:',
     sessionTtlMs: v.SESSION_TTL_HOURS * 3600000,
   };
 }

@@ -236,3 +236,40 @@ export type Booking = z.infer<typeof bookingSchema>;
 
 export const bookingListQuerySchema = z.object({ status: bookingStatusSchema.optional() }).strict();
 export const bookingListSchema = z.object({ items: z.array(bookingSchema) }).strict();
+
+export const bookingLineSchema = z
+  .object({
+    concept: z.string().min(1),
+    amountCop: z.number().int().min(-Number.MAX_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER),
+  })
+  .strict();
+export const adminBookingDetailSchema = z
+  .object({
+    booking: bookingSchema,
+    lines: z.array(bookingLineSchema),
+    email: emailQueueItemSchema.nullable(),
+  })
+  .strict();
+export const capturedEmailSchema = z
+  .object({
+    id: uuidSchema,
+    bookingId: uuidSchema,
+    toEmail: emailSchema,
+    subject: z.string().min(1),
+    textBody: z.string(),
+    htmlBody: z.string().nullable(),
+    capturedAt: instantSchema,
+  })
+  .strict();
+export const emailDetailSchema = z
+  .object({
+    event: emailQueueItemSchema,
+    payload: emailPayloadSchema,
+    capture: capturedEmailSchema.nullable(),
+  })
+  .strict();
+export type AdminBookingPage = z.infer<typeof adminBookingPageSchema>;
+export type AdminBookingDetail = z.infer<typeof adminBookingDetailSchema>;
+export type EmailQueueItem = z.infer<typeof emailQueueItemSchema>;
+export type EmailQueuePage = z.infer<typeof emailQueuePageSchema>;
+export type EmailDetail = z.infer<typeof emailDetailSchema>;

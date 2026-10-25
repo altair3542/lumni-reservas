@@ -1,6 +1,6 @@
 # Lumni Reservas
 
-Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: base, cotizador backend y API de borradores/confirmación implementados.** La interfaz sigue mostrando acceso y catálogo; el cotizador visual, el formulario de reserva, la administración y el chat se incorporan después.
+Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: base, cotizador, reservas y administración implementados en el backend.** La interfaz sigue mostrando acceso y catálogo; el cotizador visual, el formulario de reserva, la administración y el chat se incorporan después.
 
 ## Ejecutar la demo (recomendado para evaluación)
 
@@ -97,9 +97,9 @@ En desarrollo nativo:
 pnpm verify
 ```
 
-`verify` ejecuta lint, tipos, **146 pruebas: 6 de arranque + 18 contratos + 67 de API/dominio sin BD + 55 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
+`verify` ejecuta lint, tipos, **172 pruebas: 6 de arranque + 18 contratos + 72 de API/dominio sin BD + 76 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
 
-La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la API de reservas queda lista para revisión.
+La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la API de administración queda lista para revisión.
 
 GitHub Actions está configurado con matriz Node 22/24/26 y un trabajo Docker. La ejecución remota depende de publicar el repositorio; no se afirma que ya haya ocurrido.
 
@@ -155,15 +155,45 @@ Cada guardado incrementa la versión. El paso devuelto es el siguiente pendiente
 
 Una versión antigua al editar/confirmar un draft produce 409; recarga antes de reintentar. Datos incompletos para confirmar producen 422. UUID ajeno o inexistente produce 404. Los cuerpos/query desconocidos se rechazan con 400.
 
-La confirmación bloquea la propia fila y usa el snapshot persistido, aunque cambie el catálogo. En una sola conexión y transacción escribe `confirmed`, cuatro líneas contables (base, descuento negativo, recargo y servicios) y un evento `booking-confirmed:{id}`. Repetir una confirmación ya exitosa devuelve el mismo snapshot y fecha, incluso con versión vieja, sin líneas ni correo adicionales. Estados finales rechazan reconfirmación con 409; las rutas de gestión administrativa se incorporan en A3.
+La confirmación bloquea la propia fila y usa el snapshot persistido, aunque cambie el catálogo. En una sola conexión y transacción escribe `confirmed`, cuatro líneas contables (base, descuento negativo, recargo y servicios) y un evento `booking-confirmed:{id}`. Repetir una confirmación ya exitosa devuelve el mismo snapshot y fecha, incluso con versión vieja, sin líneas ni correo adicionales. Estados finales rechazan reconfirmación con 409; la gestión administrativa usa las rutas descritas a continuación.
 
 Si otra reserva gana el horario, la exclusión GiST provoca rollback completo; se responde 409 `ROOM_UNAVAILABLE` con `error.suggestedSlot` (o null), calculado después del rollback. El perdedor conserva su draft. Los horarios contiguos y las salas distintas sí pueden confirmarse simultáneamente.
 
 El evento de correo queda `pending`, sin enviar mensajes ni crear capturas todavía. El worker de A5 procesará esos eventos. La interfaz de estos endpoints se incorpora en A4; la pantalla actual no cambia con A2.
 
+## Administración por API
+
+Inicia sesión como `admin@example.com` desde la pantalla de acceso. Todas las rutas `/api/admin` exigen sesión de administrador: un cliente obtiene 403 y una petición sin sesión válida obtiene 401.
+
+| Método y ruta | Función |
+| --- | --- |
+| `GET /api/admin/bookings?page=1&pageSize=20&status=confirmed&roomId=<uuid>` | Reservas de todos los dueños, filtros combinables, total filtrado y paginación por SQL. |
+| `GET /api/admin/bookings/:id` | `{ booking, lines, email }`: snapshot y motivo de cancelación, líneas contables y estado del evento de correo, si existe. |
+| `POST /api/admin/bookings/:id/cancel` | `{ "expectedVersion": 5, "reason": "Cambio solicitado" }`. Solo desde confirmed; conserva precio/líneas/correo y libera el horario. |
+| `POST /api/admin/bookings/:id/complete` | `{ "expectedVersion": 5 }`. Solo desde confirmed cuando ya terminó; conserva precio/líneas/correo. |
+| `GET /api/admin/emails?page=1&pageSize=20&status=failed` | Eventos pending/sent/failed con intentos, último error e ID de captura nullable. |
+| `GET /api/admin/emails/:id` | `{ event, payload, capture }`; el ID es del evento outbox, también cuando todavía no hay captura. |
+
+Los listados usan página 1 y tamaño 20 por defecto, máximo 100, y orden estable por fecha de creación descendente e ID descendente. Items y total se leen en la misma transacción/snapshot. Filtros y query strings se validan en servidor.
+
+Cancelar exige motivo válido (no vacío ni solo espacios, máximo 1.000 caracteres); ausente/blanco/excesivo produce 422. Tipos/campos desconocidos producen 400. Versión obsoleta, repetir una cancelación o cambiar un estado final produce 409. Las mutaciones bloquean la propia fila en una transacción e incrementan la versión. No hay una API genérica para asignar estados. El completado es manual por admin después del fin, sin job automático.
+
+Para inspeccionar la reserva que probaste como cliente, entra como admin y ejecuta en la consola del navegador:
+
+```js
+const respuestaAdmin = await fetch('/api/admin/bookings?status=confirmed', {
+  credentials: 'include',
+});
+console.log(respuestaAdmin.status, await respuestaAdmin.json());
+```
+
+Para ver un detalle, usa el ID obtenido en `/api/admin/bookings/<id>`. La cancelación es una operación real: envía motivo y la versión actual que muestra ese detalle. Si cambia la versión, vuelve a cargar antes de reintentar.
+
+Los correos reales creados hasta esta fase siguen pending. La inspección de failed/sent/capturas se verifica con fixtures de PostgreSQL; el worker que los producirá se incorpora en A5. El panel visual de administración se incorpora en A4.
+
 ## Estructura y decisiones
 
-- `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador y reservas autenticadas.
+- `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador, reservas y administración autenticadas.
 - `apps/web`: React 18/Vite, pantalla de acceso y catálogo; cliente API con validación de respuestas.
 - `packages/shared`: contratos Zod estrictos de login, quote, draft, confirmación/versiones, admin, correo, extracción IA y errores HTTP.
 - `apps/api/src/db` y `apps/api/drizzle`: diez tablas, migraciones Drizzle/SQL, checks, claves únicas y seed.
@@ -180,12 +210,12 @@ docker compose exec postgres psql -U lumni -d lumni_app -c "SELECT conname, pg_g
 
 La confirmación HTTP usa esta exclusión y una transacción para estado, líneas y outbox. Las pruebas de A2 enfrentan solicitudes HTTP simultáneas de dos clientes con PostgreSQL real, además de las pruebas iniciales del constraint. El worker de correo queda pendiente.
 
-La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y scrypt con sal para contraseñas. Las mutaciones exigen Origin. En desarrollo HTTP se aceptan localhost y 127.0.0.1 únicamente con el mismo puerto configurado; otros hosts y puertos siguen bloqueados. Producción conserva un único origen exacto. El entorno Docker de demostración permite HTTP local; Secure se activa con NODE_ENV=production y exige HTTPS. A3 ampliará el endurecimiento de auth.
+La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y scrypt con sal para contraseñas. Las mutaciones exigen Origin. En desarrollo HTTP se aceptan localhost y 127.0.0.1 únicamente con el mismo puerto configurado; otros hosts y puertos siguen bloqueados. Producción conserva un único origen exacto. El entorno Docker de demostración permite HTTP local; Secure se activa con NODE_ENV=production o WEB_ORIGIN HTTPS; producción debe servirse por HTTPS. Las rutas administrativas exigen sesión y rol admin; recursos de otro cliente conservan el 404. El rol se consulta en PostgreSQL, sin confiar en campos enviados por el navegador.
 
 ## Alcance pendiente y uso de IA
 
-Pendientes: revisión de A2; A3 admin/endurecimiento; A4 wizard/UI completa; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
+Pendientes: revisión de A3; A4 wizard/UI completa; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
 
-Codex asistió en la base, cotizador, API de reservas y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
+Codex asistió en la base, cotizador, API de reservas/administración y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 
 Las instrucciones de trabajo de esta aplicación están en `AGENTS.md`. La planeación, los briefs y las referencias se mantienen fuera del repositorio y no se necesitan para instalar, ejecutar o probar la aplicación. Los commits y sus mensajes son manuales del usuario; no se hace staging, commit ni publicación automática.

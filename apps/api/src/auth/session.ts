@@ -28,7 +28,11 @@ export function createSessions(
     });
     return token;
   };
-  const required: RequestHandler = async (req, _res, next) => {
+  return { issue, required: requireAuth(database, now) };
+}
+
+export function requireAuth(database: Database, now: () => Date): RequestHandler {
+  return async (req, _res, next) => {
     const token: unknown = req.cookies?.[SESSION_COOKIE];
     if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token))
       throw new HttpError(401, 'UNAUTHORIZED', 'Inicia sesión para continuar');
@@ -42,7 +46,6 @@ export function createSessions(
     req.user = user;
     next();
   };
-  return { issue, required };
 }
 export const requireRole =
   (role: User['role']): RequestHandler =>

@@ -16,6 +16,7 @@ import {
 import type { Database } from '../db/client.js';
 import * as schema from '../db/schema.js';
 import { HttpError } from '../http/errors.js';
+import { requireOwner } from '../auth/ownership.js';
 import { requestedStart, scheduleIssue } from '../quotes/domain.js';
 import { QuoteService } from '../quotes/service.js';
 import { bookingQuoteInput, nextStep, transition } from './domain.js';
@@ -23,7 +24,7 @@ import { bookingQuoteInput, nextStep, transition } from './domain.js';
 type BookingRow = typeof schema.bookings.$inferSelect;
 
 // Expone solo el contrato público; el hash de idempotencia nunca sale de la API.
-function serialize(row: BookingRow): Booking {
+export function serializeBooking(row: BookingRow): Booking {
   return bookingSchema.parse({
     id: row.id,
     ownerId: row.ownerId,
@@ -79,8 +80,8 @@ export class BookingService {
       .from(schema.bookings)
       .where(and(eq(schema.bookings.id, id), eq(schema.bookings.ownerId, ownerId)))
       .for('update');
-    if (!row) throw new HttpError(404, 'BOOKING_NOT_FOUND', 'Reserva no encontrada');
-    return serialize(row);
+    requireOwner(ownerId, row);
+    return serializeBooking(row);
   }
 
   async create(ownerId: string, value: unknown): Promise<Booking> {
@@ -115,7 +116,7 @@ export class BookingService {
         })
         .onConflictDoNothing({ target: [schema.bookings.ownerId, schema.bookings.clientRequestId] })
         .returning();
-      if (created) return serialize(created);
+      if (created) return serializeBooking(created);
       const [existing] = await db
         .select()
         .from(schema.bookings)
@@ -131,7 +132,7 @@ export class BookingService {
           'IDEMPOTENCY_CONFLICT',
           'El identificador de creación ya se usó con otros datos',
         );
-      return serialize(existing);
+      return serializeBooking(existing);
     });
   }
 
@@ -140,8 +141,8 @@ export class BookingService {
       .select()
       .from(schema.bookings)
       .where(and(eq(schema.bookings.id, id), eq(schema.bookings.ownerId, ownerId)));
-    if (!row) throw new HttpError(404, 'BOOKING_NOT_FOUND', 'Reserva no encontrada');
-    return serialize(row);
+    requireOwner(ownerId, row);
+    return serializeBooking(row);
   }
 
   async list(ownerId: string, status?: BookingStatus): Promise<Booking[]> {
@@ -155,7 +156,7 @@ export class BookingService {
         ),
       )
       .orderBy(desc(schema.bookings.createdAt), desc(schema.bookings.id));
-    return rows.map(serialize);
+    return rows.map(serializeBooking);
   }
 
   async save(ownerId: string, id: string, value: unknown): Promise<Booking> {
@@ -214,7 +215,7 @@ export class BookingService {
         .where(eq(schema.bookings.id, id))
         .returning();
       if (!updated) throw new Error('Borrador bloqueado desapareció');
-      return serialize(updated);
+      return serializeBooking(updated);
     });
   }
 
@@ -295,7 +296,7 @@ export class BookingService {
           payload,
           nextAttemptAt: now,
         });
-        return serialize(updated);
+        return serializeBooking(updated);
       });
     } catch (error) {
       // Drizzle envuelve la excepción original de pg. La sugerencia se calcula tras ROLLBACK.

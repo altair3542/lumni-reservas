@@ -21,6 +21,8 @@ import { createQuoteRouter } from './quotes/routes.js';
 import { QuoteService } from './quotes/service.js';
 import { createBookingRouter } from './bookings/routes.js';
 import { BookingService } from './bookings/service.js';
+import { createAdminRouter } from './admin/routes.js';
+import { AdminService } from './admin/service.js';
 export type AppOptions = {
   database: Database;
   config: Config;
@@ -101,6 +103,12 @@ export function createApp({
     auth.required,
     requireRole('client'),
     createBookingRouter(new BookingService(database, now)),
+  );
+  app.use(
+    '/api/admin',
+    auth.required,
+    requireRole('admin'),
+    createAdminRouter(new AdminService(database, now)),
   );
   if (config.webDistDir) app.use(express.static(config.webDistDir));
   app.use((_req, _res) => {

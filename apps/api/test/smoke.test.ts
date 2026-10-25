@@ -171,7 +171,34 @@ describe('API real + sesiones PostgreSQL', () => {
     clock = new Date(clock.getTime() + config.sessionTtlMs + 1);
     await request(production).get('/api/me').set('Cookie', cookie).expect(401);
   });
-  it('middleware admin rechaza cliente y acepta administrador sin implementar rutas A3', async () => {
+  it('HTTPS en desarrollo emite Secure y conserva duración y privacidad de la sesión', async () => {
+    const httpsOrigin = 'https://localhost:5173';
+    const https = createApp({
+      database,
+      config: readConfig({
+        DATABASE_URL: process.env.TEST_DATABASE_URL,
+        WEB_ORIGIN: httpsOrigin,
+        NODE_ENV: 'development',
+      }),
+      now: () => clock,
+    });
+    const response = await request(https)
+      .post('/api/auth/login')
+      .set('Origin', httpsOrigin)
+      .send(credentials)
+      .expect(200);
+    const cookie = cookieOf(response);
+    expect(cookie).toContain('Secure');
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Lax');
+    expect(cookie).toContain(`Max-Age=${config.sessionTtlMs / 1000}`);
+    const [stored] = (await database.pool.query('SELECT expires_at FROM sessions')).rows;
+    expect(stored.expires_at.toISOString()).toBe(
+      new Date(clock.getTime() + config.sessionTtlMs).toISOString(),
+    );
+    await request(https).get('/api/me').set('Cookie', cookie.split(';')[0]!).expect(200);
+  });
+  it('middleware admin rechaza cliente y acepta administrador', async () => {
     const auth = createSessions(database, config, () => clock);
     const harness = express().use(cookieParser());
     harness.get('/admin', auth.required, requireRole('admin'), (_req, res) => res.sendStatus(204));
