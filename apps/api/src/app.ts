@@ -19,6 +19,8 @@ import { HttpError } from './http/errors.js';
 import { isAllowedOrigin } from './http/origin.js';
 import { createQuoteRouter } from './quotes/routes.js';
 import { QuoteService } from './quotes/service.js';
+import { createBookingRouter } from './bookings/routes.js';
+import { BookingService } from './bookings/service.js';
 export type AppOptions = {
   database: Database;
   config: Config;
@@ -94,6 +96,12 @@ export function createApp({
     requireRole('client'),
     createQuoteRouter(new QuoteService(database, now)),
   );
+  app.use(
+    '/api/bookings',
+    auth.required,
+    requireRole('client'),
+    createBookingRouter(new BookingService(database, now)),
+  );
   if (config.webDistDir) app.use(express.static(config.webDistDir));
   app.use((_req, _res) => {
     throw new HttpError(404, 'NOT_FOUND', 'Ruta no encontrada');
@@ -111,9 +119,14 @@ export function createApp({
       return;
     }
     if (err instanceof HttpError) {
-      res
-        .status(err.status)
-        .json({ error: { code: err.code, message: err.message, requestId: req.requestId } });
+      res.status(err.status).json({
+        error: {
+          code: err.code,
+          message: err.message,
+          requestId: req.requestId,
+          ...(err.suggestedSlot !== undefined ? { suggestedSlot: err.suggestedSlot } : {}),
+        },
+      });
       return;
     }
     if (err instanceof SyntaxError && 'body' in err) {

@@ -174,6 +174,7 @@ export const errorResponseSchema = z
         message: z.string().min(1),
         fieldErrors: z.record(z.string(), z.array(z.string())).optional(),
         requestId: uuidSchema,
+        suggestedSlot: slotSchema.nullable().optional(),
       })
       .strict(),
   })
@@ -232,3 +233,6 @@ export const emailQueuePageSchema = z
   })
   .strict();
 export type Booking = z.infer<typeof bookingSchema>;
+
+export const bookingListQuerySchema = z.object({ status: bookingStatusSchema.optional() }).strict();
+export const bookingListSchema = z.object({ items: z.array(bookingSchema) }).strict();

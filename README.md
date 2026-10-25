@@ -1,6 +1,6 @@
 # Lumni Reservas
 
-Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: base A0 y cotizador backend A1 implementados; revisión de A1 pendiente.** La pantalla del cotizador, confirmación de reservas, administración y chat se incorporan en las fases siguientes.
+Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: base, cotizador backend y API de borradores/confirmación implementados.** La interfaz sigue mostrando acceso y catálogo; el cotizador visual, el formulario de reserva, la administración y el chat se incorporan después.
 
 ## Ejecutar la demo (recomendado para evaluación)
 
@@ -97,9 +97,9 @@ En desarrollo nativo:
 pnpm verify
 ```
 
-`verify` ejecuta lint, tipos, **105 pruebas: 6 de arranque + 16 contratos + 50 de API/dominio sin BD + 33 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
+`verify` ejecuta lint, tipos, **146 pruebas: 6 de arranque + 18 contratos + 67 de API/dominio sin BD + 55 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
 
-La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la revisión de A1 continúa pendiente.
+La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la API de reservas queda lista para revisión.
 
 GitHub Actions está configurado con matriz Node 22/24/26 y un trabajo Docker. La ejecución remota depende de publicar el repositorio; no se afirma que ya haya ocurrido.
 
@@ -123,11 +123,47 @@ El cálculo admite 60–600 minutos en bloques de 30, descuentos 10 % desde 4h y
 
 Disponibilidad: solo confirmed/completed ocupan, con rangos `[inicio, fin)`. La alternativa conserva sala, fecha y duración, avanza en bloques de 30 minutos, respeta 07:00–21:00 y no propone instantes pasados. Domingo, pasado o falta de hueco dejan alternativa null. **Cotizar no reserva ni bloquea cupo.** La pantalla para este endpoint se desarrolla en A4.
 
-`QuoteService` en `apps/api/src/quotes/service.ts` es reutilizable por las fases siguientes; `domain.ts` contiene cálculo, calendario y búsqueda puros. Los contratos compartidos y las migraciones se conservaron sin cambios.
+`QuoteService` en `apps/api/src/quotes/service.ts` es reutilizable por las fases siguientes; `domain.ts` contiene cálculo, calendario y búsqueda puros. A2 reutiliza este servicio y la misma validación de calendario. Las migraciones se conservaron sin cambios.
+
+## Borradores y confirmación por API
+
+Estas rutas requieren sesión de cliente. El dueño proviene de la sesión; no se aceptan dueño, estado ni importes enviados por el navegador. Las respuestas individuales tienen forma `{ "booking": ... }` y el listado `{ "items": [...] }`.
+
+| Método y ruta | Entrada |
+| --- | --- |
+| `POST /api/bookings` | `clientRequestId` UUID y `customer` parcial opcional. Responde 200 tanto en creación como en replay. |
+| `GET /api/bookings?status=draft` | Lista únicamente las reservas propias; el filtro de estado es opcional. |
+| `GET /api/bookings/:id` | Retoma campos, próximo paso, versión y precio persistidos en servidor. |
+| `PATCH /api/bookings/:id/draft` | `expectedVersion`, `step` y los datos del paso. |
+| `POST /api/bookings/:id/confirm` | Solo `expectedVersion`. |
+
+Creación mínima:
+
+```json
+{ "clientRequestId": "d63ee83e-a9db-4b6d-9eb5-a5486d518563" }
+```
+
+Genera un UUID por intención de creación. Repetirlo con los mismos datos normalizados devuelve la misma reserva, incluso tras editarla. Reutilizarlo con otros datos da 409. Se conserva el hash original de creación, que no se expone al cliente.
+
+Guarda los pasos usando la versión devuelta por la respuesta anterior:
+
+1. `{ "step": 1, "expectedVersion": 1, "customer": { "fullName": "Ana", "email": "ana@example.com" } }`. Empresa opcional.
+2. `{ "step": 2, "expectedVersion": 2, "roomId": "<uuid-sala>", "date": "<fecha futura YYYY-MM-DD>", "startTime": "09:00", "durationMinutes": 240 }`. Usa los datos elegidos en el cotizador para prellenar este paso. No se envía un objeto Quote ni su precio como autoridad.
+3. `{ "step": 3, "expectedVersion": 3, "serviceCodes": ["projector"] }`. Envía `[]` explícitamente para elegir ningún extra. El servidor calcula y guarda el snapshot de precio.
+
+Cada guardado incrementa la versión. El paso devuelto es el siguiente pendiente (3 cuando ya puede revisarse el precio). Sala/horario pueden guardarse antes del contacto, pero el paso de extras exige contacto y horario completos. Un cambio de sala/horario invalida el snapshot: hay que guardar extras y revisar el nuevo precio antes de confirmar. Cambiar extras recalcula el precio en servidor. Guardar un precio o cotizar **no bloquea disponibilidad**.
+
+Una versión antigua al editar/confirmar un draft produce 409; recarga antes de reintentar. Datos incompletos para confirmar producen 422. UUID ajeno o inexistente produce 404. Los cuerpos/query desconocidos se rechazan con 400.
+
+La confirmación bloquea la propia fila y usa el snapshot persistido, aunque cambie el catálogo. En una sola conexión y transacción escribe `confirmed`, cuatro líneas contables (base, descuento negativo, recargo y servicios) y un evento `booking-confirmed:{id}`. Repetir una confirmación ya exitosa devuelve el mismo snapshot y fecha, incluso con versión vieja, sin líneas ni correo adicionales. Estados finales rechazan reconfirmación con 409; las rutas de gestión administrativa se incorporan en A3.
+
+Si otra reserva gana el horario, la exclusión GiST provoca rollback completo; se responde 409 `ROOM_UNAVAILABLE` con `error.suggestedSlot` (o null), calculado después del rollback. El perdedor conserva su draft. Los horarios contiguos y las salas distintas sí pueden confirmarse simultáneamente.
+
+El evento de correo queda `pending`, sin enviar mensajes ni crear capturas todavía. El worker de A5 procesará esos eventos. La interfaz de estos endpoints se incorpora en A4; la pantalla actual no cambia con A2.
 
 ## Estructura y decisiones
 
-- `apps/api`: Express 5, `createApp`, health, login/logout/me y catálogos autenticados.
+- `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador y reservas autenticadas.
 - `apps/web`: React 18/Vite, pantalla de acceso y catálogo; cliente API con validación de respuestas.
 - `packages/shared`: contratos Zod estrictos de login, quote, draft, confirmación/versiones, admin, correo, extracción IA y errores HTTP.
 - `apps/api/src/db` y `apps/api/drizzle`: diez tablas, migraciones Drizzle/SQL, checks, claves únicas y seed.
@@ -142,14 +178,14 @@ Los drafts admiten datos parciales. Confirmed/completed exigen datos completos y
 docker compose exec postgres psql -U lumni -d lumni_app -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='bookings_no_overlap';"
 ```
 
-La confirmación transaccional/idempotente y el worker aún corresponden a A2/A5. Las pruebas actuales de carrera son de restricción en DB; no se atribuye a A0 una ruta HTTP de confirmación que todavía no existe.
+La confirmación HTTP usa esta exclusión y una transacción para estado, líneas y outbox. Las pruebas de A2 enfrentan solicitudes HTTP simultáneas de dos clientes con PostgreSQL real, además de las pruebas iniciales del constraint. El worker de correo queda pendiente.
 
 La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y scrypt con sal para contraseñas. Las mutaciones exigen Origin. En desarrollo HTTP se aceptan localhost y 127.0.0.1 únicamente con el mismo puerto configurado; otros hosts y puertos siguen bloqueados. Producción conserva un único origen exacto. El entorno Docker de demostración permite HTTP local; Secure se activa con NODE_ENV=production y exige HTTPS. A3 ampliará el endurecimiento de auth.
 
 ## Alcance pendiente y uso de IA
 
-Pendientes: A2 API de borradores/confirmación; A3 admin/endurecimiento; A4 wizard/UI completa; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
+Pendientes: revisión de A2; A3 admin/endurecimiento; A4 wizard/UI completa; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
 
-Codex (GPT-6) asistió en A0 y en la corrección de portabilidad. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
+Codex asistió en la base, cotizador, API de reservas y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 
 Las instrucciones de trabajo de esta aplicación están en `AGENTS.md`. La planeación, los briefs y las referencias se mantienen fuera del repositorio y no se necesitan para instalar, ejecutar o probar la aplicación. Los commits y sus mensajes son manuales del usuario; no se hace staging, commit ni publicación automática.

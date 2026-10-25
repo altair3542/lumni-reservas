@@ -112,21 +112,11 @@ export function evaluateQuote({
   if (!Number.isFinite(now.getTime())) throw new Error('Reloj inválido');
   const start = requestedStart(input);
   const end = start.plus({ minutes: input.durationMinutes });
-  const opening = start.startOf('day').set({ hour: 7 });
-  const closing = start.startOf('day').set({ hour: 21 });
   const slot = { startsAt: start.toJSDate(), endsAt: end.toJSDate() };
-  let reasonCode: Quote['reasonCode'] = null;
-  let message: string | null = null;
-  if (slot.startsAt.getTime() < now.getTime()) {
-    reasonCode = 'PAST';
-    message = 'El horario solicitado ya pasó.';
-  } else if (start.weekday === 7) {
-    reasonCode = 'CLOSED_SUNDAY';
-    message = 'El coworking está cerrado los domingos.';
-  } else if (start < opening || end > closing) {
-    reasonCode = 'OUTSIDE_HOURS';
-    message = 'Las reservas deben quedar entre las 07:00 y las 21:00 del mismo día.';
-  } else if (!isAvailable(slot, occupied)) {
+  const issue = scheduleIssue(input, now);
+  let reasonCode = issue?.code ?? null;
+  let message = issue?.message ?? null;
+  if (!issue && !isAvailable(slot, occupied)) {
     reasonCode = 'ROOM_UNAVAILABLE';
     message = 'La sala está ocupada durante el horario solicitado.';
   }
@@ -162,4 +152,26 @@ export function evaluateQuote({
         }
       : null,
   });
+}
+
+// La confirmación revalida el calendario sin consultar tarifas ni recalcular el precio pactado.
+export function scheduleIssue(
+  input: QuoteRequest,
+  now: Date,
+): {
+  code: NonNullable<Quote['reasonCode']>;
+  message: string;
+} | null {
+  const start = requestedStart(input);
+  const end = start.plus({ minutes: input.durationMinutes });
+  if (start.toMillis() < now.getTime())
+    return { code: 'PAST', message: 'El horario solicitado ya pasó.' };
+  if (start.weekday === 7)
+    return { code: 'CLOSED_SUNDAY', message: 'El coworking está cerrado los domingos.' };
+  if (start.hour < 7 || end > start.startOf('day').set({ hour: 21 }))
+    return {
+      code: 'OUTSIDE_HOURS',
+      message: 'Las reservas deben quedar entre las 07:00 y las 21:00 del mismo día.',
+    };
+  return null;
 }

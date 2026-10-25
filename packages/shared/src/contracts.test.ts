@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   assistantExtractionSchema,
+  bookingListQuerySchema,
   adminBookingQuerySchema,
   breakdownSchema,
   cancelSchema,
@@ -129,6 +130,35 @@ describe('Contratos de frontera compartidos', () => {
     ).toBe(false);
     expect(
       assistantExtractionSchema.safeParse({ ...extraction, intent: 'unrelated' }).success,
+    ).toBe(false);
+  });
+  it('listado de reservas valida estado y no acepta dueño ni filtros desconocidos', () => {
+    expect(bookingListQuerySchema.parse({ status: 'draft' })).toEqual({ status: 'draft' });
+    expect(bookingListQuerySchema.safeParse({ status: ['draft', 'confirmed'] }).success).toBe(
+      false,
+    );
+    expect(bookingListQuerySchema.safeParse({ ownerId: id }).success).toBe(false);
+  });
+  it('conflicto de horario puede incluir una alternativa validada sin ampliar a campos arbitrarios', () => {
+    const error = { code: 'ROOM_UNAVAILABLE', message: 'Horario ocupado', requestId: id };
+    expect(
+      errorResponseSchema.safeParse({ error: { ...error, suggestedSlot: null } }).success,
+    ).toBe(true);
+    expect(
+      errorResponseSchema.safeParse({
+        error: {
+          ...error,
+          suggestedSlot: {
+            startsAt: '2026-10-24T10:00:00-05:00',
+            endsAt: '2026-10-24T11:00:00-05:00',
+          },
+        },
+      }).success,
+    ).toBe(true);
+    expect(
+      errorResponseSchema.safeParse({
+        error: { ...error, suggestedSlot: { startsAt: 'invalid', endsAt: 'invalid' } },
+      }).success,
     ).toBe(false);
   });
   it('mantiene errores HTTP con requestId y sin campos desconocidos', () => {
