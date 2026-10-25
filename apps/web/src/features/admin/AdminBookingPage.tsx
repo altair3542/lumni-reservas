@@ -127,7 +127,7 @@ export function AdminBookingPage() {
                   </div>
                   {email.sentAt && (
                     <div>
-                      <dt>Enviado</dt>
+                      <dt>Capturado</dt>
                       <dd>{fullDate(email.sentAt)}</dd>
                     </div>
                   )}

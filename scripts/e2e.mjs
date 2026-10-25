@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const base = process.env.E2E_BASE_URL;
 const project = process.env.E2E_COMPOSE_PROJECT;
-if (!base || !project || !/^lumni-(e2e|a4-check)(?:-[a-z0-9]+)?$/.test(project))
+if (!base || !project || !/^lumni-(e2e|a4-check|a5-check)(?:-[a-z0-9]+)?$/.test(project))
   throw new Error(
-    'Usa E2E_BASE_URL y un proyecto Compose aislado lumni-e2e o lumni-a4-check. Nunca la base de desarrollo.',
+    'Usa E2E_BASE_URL y un proyecto Compose aislado lumni-e2e, lumni-a4-check o lumni-a5-check. Nunca la base de desarrollo.',
   );
 const url = new URL(base);
 if (url.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(url.hostname))
@@ -85,9 +85,11 @@ for (const id of [failedBooking, sentBooking])
     throw new Error('ID de fixture inválido');
 // Solo se modifican los eventos recién creados por esta ejecución en el Compose aislado.
 const sql = `BEGIN;
-UPDATE email_outbox SET status='failed', attempts=6, last_error='Fallo controlado de transporte A4' WHERE booking_id='${failedBooking}';
+SELECT id FROM email_outbox WHERE booking_id IN ('${failedBooking}','${sentBooking}') FOR UPDATE;
+DELETE FROM captured_emails WHERE booking_id='${failedBooking}';
+UPDATE email_outbox SET status='failed', attempts=6, last_error='Fallo controlado de captura E2E' WHERE booking_id='${failedBooking}';
 INSERT INTO captured_emails (dedup_key,booking_id,to_email,subject,text_body)
-SELECT dedup_key,booking_id,payload->>'toEmail',payload->>'subject',payload->>'textBody' FROM email_outbox WHERE booking_id='${sentBooking}';
+SELECT dedup_key,booking_id,payload->>'toEmail',payload->>'subject',payload->>'textBody' FROM email_outbox WHERE booking_id='${sentBooking}' ON CONFLICT (booking_id) DO NOTHING;
 UPDATE email_outbox SET status='sent', attempts=1, sent_at=now() WHERE booking_id='${sentBooking}';
 COMMIT;
 SELECT booking_id,id FROM email_outbox WHERE booking_id IN ('${failedBooking}','${sentBooking}');`;

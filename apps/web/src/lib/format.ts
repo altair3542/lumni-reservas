@@ -38,6 +38,6 @@ export const bookingLabels: Record<BookingStatus, string> = {
 };
 export const emailLabels: Record<string, string> = {
   pending: 'Pendiente',
-  sent: 'Enviado',
+  sent: 'Capturado',
   failed: 'Fallido',
 };

@@ -1,6 +1,6 @@
 # Lumni Reservas
 
-Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: cotizador, reservas en tres pasos y administración disponibles desde la interfaz.** La confirmación crea un evento de correo pendiente; el worker de procesamiento y el chat se incorporan después.
+Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: cotizador, reservas en tres pasos y administración disponibles desde la interfaz.** La confirmación crea un evento de correo y un worker separado guarda su captura local en PostgreSQL. El chat está pendiente.
 
 ## Ejecutar la demo (recomendado para evaluación)
 
@@ -21,7 +21,7 @@ docker info
 docker compose up --build -d --wait
 ```
 
-**Abre http://localhost:8080**. API y web comparten origen. El primer arranque requiere conexión a Internet para descargar imágenes y dependencias; puede tardar varios minutos. `--wait` espera a que PostgreSQL y la aplicación estén saludables.
+**Abre http://localhost:8080**. API y web comparten origen. El primer arranque requiere conexión a Internet para descargar imágenes y dependencias; puede tardar varios minutos. `--wait` espera a que PostgreSQL, la aplicación y el worker estén saludables.
 
 | Perfil demo | Correo | Contraseña |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ Son datos ficticios para evaluación local. La aplicación se publica solo en la
 Comandos útiles:
 
 ```sh
-docker compose logs -f app
+docker compose logs -f app worker
 docker compose run --rm app pnpm verify
 docker compose down
 ```
@@ -52,7 +52,7 @@ pnpm dev:setup
 pnpm dev
 ```
 
-`dev:setup` diagnostica Node/Docker, crea `.env` desde el ejemplo solo si no existe, inicia únicamente PostgreSQL y aplica migración/seed. No sobrescribe tu configuración. Abre **http://localhost:5173** (también funciona **http://127.0.0.1:5173**); API en **http://localhost:3000/api/health**. Detén API/web con `Ctrl+C`.
+`dev:setup` diagnostica Node/Docker, crea `.env` desde el ejemplo solo si no existe, inicia únicamente PostgreSQL y aplica migración/seed. No sobrescribe tu configuración. Abre **http://localhost:5173** (también funciona **http://127.0.0.1:5173**); API en **http://localhost:3000/api/health**. Detén API/web con `Ctrl+C`. Para procesar los correos, abre otra terminal en esta misma carpeta y ejecuta `pnpm worker`; puedes detenerlo con `Ctrl+C` sin detener la web. En Docker el worker arranca automáticamente.
 
 Diagnóstico sin instalar dependencias:
 
@@ -70,7 +70,7 @@ También puedes usar PostgreSQL 16 propio: crea bases separadas `lumni_app`, `lu
 | Versión de Node rechazada | Usa 22.18+, 24 o 26, o la ruta Docker. Versiones fuera de ese conjunto no están verificadas. |
 | Puerto ocupado | Ajusta APP_PORT/POSTGRES_PORT en `.env` y vuelve a arrancar. Para desarrollo nativo, actualiza las URLs de base de datos si cambias su puerto. |
 | Error de credenciales PostgreSQL después de cambiar .env | El volumen conserva la contraseña inicial; los cambios de entorno no rotan usuarios existentes. Usa las credenciales con las que se creó el volumen o administra explícitamente esa instancia. |
-| Estado unhealthy | Consulta `docker compose logs app postgres`; el arranque no se considera completado hasta pasar ambos healthchecks. |
+| Estado unhealthy | Consulta `docker compose logs app worker postgres`; el arranque no se considera completado hasta pasar los tres healthchecks. |
 
 Docker apagado o ausente es un prerrequisito del equipo. No puede garantizarse desde un repositorio; por eso se declara y se diagnostica antes del arranque.
 
@@ -97,7 +97,7 @@ En desarrollo nativo:
 pnpm verify
 ```
 
-`verify` ejecuta lint, tipos, **178 pruebas: 6 de arranque + 18 contratos + 72 de API/dominio sin BD + 6 de cliente web/fechas + 76 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
+`verify` ejecuta lint, tipos, **196 pruebas: 6 de arranque + 19 contratos + 76 de API/dominio sin BD + 6 de cliente web/fechas + 89 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
 
 La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la interfaz de A4 queda lista para revisión. Los recorridos de navegador se ejecutan por separado.
 
@@ -115,7 +115,7 @@ Cliente (`cliente@example.com` / `ClienteDemo2026!`):
 Administrador (`admin@example.com` / `AdminDemo2026!`):
 
 - **Reservas**: pagina, combina filtros de sala/estado y abre detalles. Cancela con motivo o marca como completada cuando ya terminó. Listado y detalle se actualizan con los datos del servidor.
-- **Correos**: filtra por estado, revisa intentos/errores y consulta contenido y captura, si existe. Hasta implementar el worker, las confirmaciones normales permanecen pendientes.
+- **Correos**: filtra por estado, revisa intentos/errores y consulta contenido y captura, si existe. El worker convierte los pendientes en **Capturado**; el detalle y las listas con pendientes se actualizan cada dos segundos. El estado API `sent` representa una captura local, sin envío a un buzón externo.
 
 Navegación con rutas hash, por ejemplo `/#/salas` y `/#/reservas/<id>`: se pueden recargar enlaces directos tanto con Vite como con la demo Docker, sin exigir configuración de fallback de Express. Cliente y admin tienen navegación separada; los permisos reales siguen en el backend.
 
@@ -123,7 +123,7 @@ El horario siempre se presenta en America/Bogota, también si el equipo está en
 
 ## Pruebas de navegador
 
-Además de `pnpm verify`, hay **10 recorridos Playwright** con PostgreSQL real: cliente→confirmación→admin/cancelar, retoma en navegador nuevo, red, versiones, colisión/alternativa, sesión, cambios sin guardar, paginación/filtros/403, móvil y estados/capturas de correo. Se ejecutan con zona de navegador Pacific/Auckland para comprobar la presentación en Colombia.
+Además de `pnpm verify`, hay **11 recorridos Playwright** con PostgreSQL real: rechazo de correo concatenado, cliente→confirmación→captura real→admin/cancelar, retoma en navegador nuevo, red, versiones, colisión/alternativa, sesión, cambios sin guardar, paginación/filtros/403, móvil y estados/capturas de correo. Se ejecutan con zona de navegador Pacific/Auckland para comprobar la presentación en Colombia.
 
 Usa una demo **aislada**, que no contenga tus datos de desarrollo. En macOS/Linux:
 
@@ -133,7 +133,7 @@ pnpm --filter @lumni/web exec playwright install chromium
 E2E_BASE_URL=http://localhost:8097 E2E_COMPOSE_PROJECT=lumni-e2e pnpm test:e2e
 ```
 
-En PowerShell, establece esas variables con `$env:NOMBRE="valor"` antes del comando. El runner exige proyecto de pruebas y comprueba su puerto publicado antes de crear fixtures. Los correos failed/sent/capturados de esas pruebas son fixtures explícitos; no representan un worker real ni envíos externos. No hay endpoints de producción para forzar fallos.
+En PowerShell, establece esas variables con `$env:NOMBRE="valor"` antes del comando. El runner exige proyecto de pruebas y comprueba su puerto publicado antes de crear fixtures. El flujo principal comprueba la captura producida por el worker real. El recorrido dedicado a visualizar estados usa fixtures failed/sent explícitos; no demuestra reintentos del worker. Ninguna prueba representa un envío externo. No hay endpoints de producción para forzar fallos.
 
 Resultados y capturas de fallo van al directorio temporal del sistema, o a `E2E_OUTPUT_DIR` si lo defines. No se guardan cookies ni trazas de autenticación. Puedes usar `PLAYWRIGHT_CHROMIUM_PATH` para un Chromium instalado; normalmente Playwright usa su navegador compatible descargado por el comando anterior.
 
@@ -201,7 +201,33 @@ La confirmación bloquea la propia fila y usa el snapshot persistido, aunque cam
 
 Si otra reserva gana el horario, la exclusión GiST provoca rollback completo; se responde 409 `ROOM_UNAVAILABLE` con `error.suggestedSlot` (o null), calculado después del rollback. El perdedor conserva su draft. Los horarios contiguos y las salas distintas sí pueden confirmarse simultáneamente.
 
-El evento de correo queda `pending`, sin enviar mensajes ni crear capturas todavía. El worker de A5 procesará esos eventos. La interfaz permite guardar cada paso, retomar desde Mis reservas y confirmar mediante un botón explícito.
+El evento de correo queda inicialmente `pending`; el worker separado lo procesa después de confirmar, sin que la solicitud espere al correo. La interfaz permite guardar cada paso, retomar desde Mis reservas y confirmar mediante un botón explícito.
+
+## Correo y captura local
+
+Docker inicia el servicio `worker` automáticamente. En desarrollo nativo, deja `pnpm dev` activo y ejecuta en otra terminal:
+
+```sh
+pnpm worker
+```
+
+Para ejecutar los archivos compilados: `pnpm build` y después `pnpm worker:start`. El proceso usa la misma `DATABASE_URL` que la API. No requiere proveedor de correo ni SMTP.
+
+Cada evento se toma con `FOR UPDATE SKIP LOCKED`. La captura en `captured_emails` y el estado `sent` se guardan en la misma transacción. Una caída anterior al commit revierte ambas escrituras; después del commit el evento deja de ser elegible. Las claves únicas por reserva y deduplicación impiden capturas repetidas. Esta garantía se limita a PostgreSQL local; no equivale a entregar un correo externo exactamente una vez.
+
+Un fallo programa hasta cinco reintentos con esperas de **1, 2, 4, 8 y 16 minutos** desde cada fallo. El sexto fallo deja `failed` con seis intentos y un error resumido, visible en **Administración → Correos**. Reiniciar el worker conserva intentos y fecha del próximo intento. No se imprimen cuerpos ni destinatarios en sus logs.
+
+Configuración opcional en `.env`:
+
+| Variable | Valor predeterminado | Uso |
+| --- | --- | --- |
+| `EMAIL_POLL_INTERVAL_MS` | `1000` | Espera entre ciclos, de 100 a 60000 ms. |
+| `EMAIL_BATCH_SIZE` | `20` | Máximo de eventos por ciclo, de 1 a 100; una transacción por evento. |
+| `EMAIL_FAILURE_MODE` | `none` | `first-two` falla dos veces por evento y luego captura; `always` agota intentos. Solo desarrollo/test. |
+
+Para demostrar fallos localmente, detén el worker, cambia `EMAIL_FAILURE_MODE`, vuelve a iniciarlo y confirma una reserva nueva. En Docker, aplica la variable con `docker compose up -d --wait worker`. Las esperas son reales en la demo; las pruebas usan un reloj controlado para comprobar los seis intentos sin esperar 31 minutos. Producción rechaza modos de fallo simulados. No existe un endpoint para alterar reintentos ni forzar fallos.
+
+Para observar `pending`, detén solo el worker antes de confirmar; la reserva se confirma y el evento queda pendiente hasta reiniciarlo. En Docker: `docker compose stop worker` y luego `docker compose up -d --wait worker`. El panel muestra destinatario, contenido, captura, intentos y último error. La salud del worker comprueba un pulso renovado después de consultar PostgreSQL; no solo que el proceso exista.
 
 ## Administración por API
 
@@ -231,7 +257,7 @@ console.log(respuestaAdmin.status, await respuestaAdmin.json());
 
 Para ver un detalle, usa el ID obtenido en `/api/admin/bookings/<id>`. La cancelación es una operación real: envía motivo y la versión actual que muestra ese detalle. Si cambia la versión, vuelve a cargar antes de reintentar.
 
-Los correos reales creados hasta esta fase siguen pending. La inspección de failed/sent/capturas se verifica con fixtures de PostgreSQL; el worker que los producirá se incorpora en A5. El panel visual permite consultar estos estados y el contenido de cada confirmación; nunca inserta el HTML del correo como contenido ejecutable.
+Los correos pasan de pending a sent al guardar su captura; si agotan los reintentos quedan failed, consultables por administrador. El panel visual permite consultar estos estados y el contenido de cada confirmación; nunca inserta el HTML del correo como contenido ejecutable.
 
 ## Estructura y decisiones
 
@@ -250,14 +276,14 @@ Los drafts admiten datos parciales. Confirmed/completed exigen datos completos y
 docker compose exec postgres psql -U lumni -d lumni_app -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='bookings_no_overlap';"
 ```
 
-La confirmación HTTP usa esta exclusión y una transacción para estado, líneas y outbox. Las pruebas de A2 enfrentan solicitudes HTTP simultáneas de dos clientes con PostgreSQL real, además de las pruebas iniciales del constraint. El worker de correo queda pendiente.
+La confirmación HTTP usa esta exclusión y una transacción para estado, líneas y outbox. Las pruebas de A2 enfrentan solicitudes HTTP simultáneas de dos clientes con PostgreSQL real, además de las pruebas iniciales del constraint. La captura local se procesa en una transacción separada por el worker.
 
 La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y scrypt con sal para contraseñas. Las mutaciones exigen Origin. En desarrollo HTTP se aceptan localhost y 127.0.0.1 únicamente con el mismo puerto configurado; otros hosts y puertos siguen bloqueados. Producción conserva un único origen exacto. El entorno Docker de demostración permite HTTP local; Secure se activa con NODE_ENV=production o WEB_ORIGIN HTTPS; producción debe servirse por HTTPS. Las rutas administrativas exigen sesión y rol admin; recursos de otro cliente conservan el 404. El rol se consulta en PostgreSQL, sin confiar en campos enviados por el navegador.
 
 ## Alcance pendiente y uso de IA
 
-Pendientes: revisión de A4; A5 worker; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
+Pendientes: revisión de A5; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
 
-Codex asistió en la base, cotizador, reservas/administración, interfaz y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
+Codex asistió en la base, cotizador, reservas/administración, interfaz, worker de captura local y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 
 Las instrucciones de trabajo de esta aplicación están en `AGENTS.md`. La planeación, los briefs y las referencias se mantienen fuera del repositorio y no se necesitan para instalar, ejecutar o probar la aplicación. Los commits y sus mensajes son manuales del usuario; no se hace staging, commit ni publicación automática.

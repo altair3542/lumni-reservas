@@ -9,6 +9,25 @@ const admin = {
   password: process.env.DEMO_ADMIN_PASSWORD ?? 'AdminDemo2026!',
 };
 const roomId = '00000000-0000-4000-8000-000000000201';
+test('correo concatenado se bloquea sin autenticar ni enviar el formulario', async ({ page }) => {
+  await page.goto('/#/ingresar');
+  let loginRequests = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().endsWith('/api/auth/login'))
+      loginRequests += 1;
+  });
+  await page.getByLabel('Correo electrónico').fill('cliente@example.comadmin@example.com');
+  await page.getByLabel('Contraseña', { exact: true }).fill(admin.password);
+  await page.getByRole('button', { name: 'Entrar a mi espacio' }).click();
+  await expect(page.getByRole('heading', { name: 'Qué bueno verte' })).toBeVisible();
+  expect(
+    await page
+      .getByLabel('Correo electrónico')
+      .evaluate((element) => (element as HTMLInputElement).validity.valid),
+  ).toBe(false);
+  expect(loginRequests).toBe(0);
+  expect((await page.request.get('/api/me')).status()).toBe(401);
+});
 function day(offset: number, saturday = false) {
   let value = DateTime.now().setZone('America/Bogota').plus({ days: offset });
   while (value.weekday === 7 || (saturday && value.weekday !== 6)) value = value.plus({ days: 1 });
@@ -110,7 +129,13 @@ test('cliente cotiza sábado, guarda, confirma y admin consulta/cancela sin camb
   await logout(page);
   await login(page, 'admin');
   await page.goto(`/#/admin/reservas/${id}`);
-  await expect(page.getByRole('heading', { name: 'Pendiente', exact: true })).toBeVisible();
+  await expect
+    .poll(
+      async () => (await (await page.request.get(`/api/admin/bookings/${id}`)).json()).email.status,
+    )
+    .toBe('sent');
+  await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Capturado', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Marcar como completada' })).toBeDisabled();
   await page.getByRole('link', { name: 'Ver contenido y estado' }).click();
   await expect(page.locator('.email-body')).toContainText('200000 COP');
@@ -344,7 +369,7 @@ test('admin inspecciona errores y capturas reales del fixture aislado', async ({
   await login(page, 'admin');
   await page.goto(`/#/admin/correos/${process.env.E2E_FAILED_EMAIL}`);
   await expect(page.getByRole('heading', { name: 'Fallido', exact: true })).toBeVisible();
-  await expect(page.getByText('Fallo controlado de transporte A4')).toBeVisible();
+  await expect(page.getByText('Fallo controlado de captura E2E')).toBeVisible();
   await page.goto(`/#/admin/correos/${process.env.E2E_SENT_EMAIL}`);
   await expect(page.getByRole('heading', { name: 'Confirmación capturada' })).toBeVisible();
   await expect(page.locator('.email-body')).toContainText('COP');

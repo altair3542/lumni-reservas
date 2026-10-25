@@ -37,5 +37,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+  worker:
+    build: .
+    init: true
+    command: ["node", "apps/api/dist/worker.js"]
+    environment:
+      NODE_ENV: development
+      PGUSER: lumni
+      PGPASSWORD: ${POSTGRES_PASSWORD:-local-demo-change-me}
+      EMAIL_POLL_INTERVAL_MS: ${EMAIL_POLL_INTERVAL_MS:-1000}
+      EMAIL_BATCH_SIZE: ${EMAIL_BATCH_SIZE:-20}
+      EMAIL_FAILURE_MODE: ${EMAIL_FAILURE_MODE:-none}
+      EMAIL_HEALTH_FILE: /tmp/lumni-email-worker-heartbeat
+      DEMO_CLIENT_PASSWORD: ${DEMO_CLIENT_PASSWORD:-ClienteDemo2026!}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-AdminDemo2026!}
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "const fs=require('node:fs');try{const age=Date.now()-Number(fs.readFileSync('/tmp/lumni-email-worker-heartbeat','utf8'));process.exit(age>=0 && age<Math.max(30000,Number(process.env.EMAIL_POLL_INTERVAL_MS)*3)?0:1)}catch{process.exit(1)}"]
+      start_period: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 6
 volumes:
   lumni_pgdata:

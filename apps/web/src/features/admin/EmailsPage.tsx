@@ -20,6 +20,8 @@ export function EmailsPage() {
     queryFn: () => api.emails(search.toString()),
     enabled: valid,
     staleTime: 0,
+    refetchInterval: (query) =>
+      query.state.data?.items.some((item) => item.status === 'pending') ? 2000 : false,
   });
   return (
     <>
@@ -147,6 +149,7 @@ export function EmailPage() {
     queryFn: () => api.email(id),
     enabled: valid,
     staleTime: 0,
+    refetchInterval: (query) => (query.state.data?.event.status === 'pending' ? 2000 : false),
   });
   if (!valid) return <Notice kind="error">La referencia del correo no es válida.</Notice>;
   if (!email.data)
@@ -183,6 +186,9 @@ export function EmailPage() {
         </button>
       </PageHeading>
       <ErrorNotice error={email.error} />
+      <Notice>
+        Este correo se guarda como captura local de demostración; no se envía a un buzón externo.
+      </Notice>
       <div className="two-column">
         <section className="card">
           <dl className="details">
@@ -216,7 +222,7 @@ export function EmailPage() {
           {capture ? (
             <p className="muted">Capturada el {fullDate(capture.capturedAt)}</p>
           ) : (
-            <Notice>Este correo todavía no tiene una captura de envío.</Notice>
+            <Notice>Este correo todavía no tiene una captura local.</Notice>
           )}
           <pre className="email-body">{capture?.textBody ?? payload.textBody}</pre>
         </section>

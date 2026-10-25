@@ -16,6 +16,14 @@ import {
 const id = '00000000-0000-4000-8000-000000000201';
 const quote = { roomId: id, date: '2026-10-24', startTime: '09:00', durationMinutes: 60 };
 describe('Contratos de frontera compartidos', () => {
+  it('rechaza correos concatenados en vez de extraer una cuenta válida de la cadena', () => {
+    for (const email of [
+      'cliente@example.comadmin@example.com',
+      'cliente@example.com,admin@example.com',
+      'cliente@example.com admin@example.com',
+    ])
+      expect(loginSchema.safeParse({ email, password: 'ClienteDemo2026!' }).success).toBe(false);
+  });
   it('normaliza el correo y rechaza roles/precios inyectados', () => {
     expect(loginSchema.parse({ email: ' Cliente@Example.com ', password: 'secret' }).email).toBe(
       'cliente@example.com',

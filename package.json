@@ -23,7 +23,9 @@
     "dev:setup": "node scripts/setup.mjs",
     "format": "prettier --write apps packages scripts infra \"*.js\" \"*.json\" .prettierrc.json",
     "format:check": "prettier --check apps packages scripts infra \"*.js\" \"*.json\" .prettierrc.json",
-    "test:e2e": "node scripts/e2e.mjs"
+    "test:e2e": "node scripts/e2e.mjs",
+    "worker": "pnpm --filter @lumni/shared build && pnpm --filter @lumni/api worker",
+    "worker:start": "pnpm --filter @lumni/api worker:start"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",

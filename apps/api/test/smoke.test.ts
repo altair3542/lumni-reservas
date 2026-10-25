@@ -36,6 +36,41 @@ beforeEach(async () => {
 });
 afterAll(() => database.pool.end());
 describe('API real + sesiones PostgreSQL', () => {
+  it('un correo concatenado nunca crea sesión, con contraseña de cliente ni de admin', async () => {
+    for (const password of [demoPasswords.clientPassword, demoPasswords.adminPassword]) {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .set('Origin', origin)
+        .send({ email: 'cliente@example.comadmin@example.com', password })
+        .expect(400);
+      expect(response.headers['set-cookie']).toBeUndefined();
+      expect(response.body.user).toBeUndefined();
+    }
+    await request(app).get('/api/me').expect(401);
+    expect(
+      (await database.pool.query('SELECT count(*)::int count FROM sessions')).rows[0].count,
+    ).toBe(0);
+  });
+  it('un intento inválido no cambia el rol de una sesión ya existente', async () => {
+    const session = request.agent(app);
+    await session.post('/api/auth/login').set('Origin', origin).send(credentials).expect(200);
+    const response = await session
+      .post('/api/auth/login')
+      .set('Origin', origin)
+      .send({
+        email: 'cliente@example.comadmin@example.com',
+        password: demoPasswords.adminPassword,
+      })
+      .expect(400);
+    expect(response.headers['set-cookie']).toBeUndefined();
+    expect((await session.get('/api/me').expect(200)).body.user).toMatchObject({
+      email: credentials.email,
+      role: 'client',
+    });
+    expect(
+      (await database.pool.query('SELECT count(*)::int count FROM sessions')).rows[0].count,
+    ).toBe(1);
+  });
   it('health confirma conexión; sin sesión no hay perfil ni catálogo', async () => {
     await request(app).get('/api/health').expect(200, { status: 'ok', database: 'up' });
     for (const path of ['/api/me', '/api/rooms', '/api/services']) {
