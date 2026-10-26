@@ -8,7 +8,7 @@
     "node": ">=22.18.0 <23 || >=24.0.0 <25 || >=26.0.0 <27"
   },
   "scripts": {
-    "dev": "pnpm --filter @lumni/shared build && pnpm --parallel --filter @lumni/api --filter @lumni/web dev",
+    "dev": "pnpm db:setup && pnpm --parallel --filter @lumni/api --filter @lumni/web dev",
     "build": "pnpm -r build",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "pnpm --filter @lumni/shared build && pnpm -r typecheck && tsc -p sql/tsconfig.json",

@@ -12,3 +12,5 @@ Esta carpeta contiene la aplicación. La planeación, los briefs A0–A10, refer
 - No incluir secretos, material de planeación ni registros personales. No atribuir pruebas o revisiones humanas que no ocurrieron.
 
 - Mantén el código legible desde cada entrega: ejecuta pnpm format y pnpm format:check. No pospongas el formato de TS/TSX/CSS ni comprimas bloques manualmente. La configuración de Prettier es compartida y verify la comprueba.
+
+- Ampliación demo autorizada el 2026-10-26: db:setup/seed CLI agrega24 ejemplos en desarrollo; pnpm dev lo ejecuta antes del servidor y Docker en su entrypoint. Mantén solicitudes estables, preservación de ediciones y separación de Parte3. SEED_DEMO_BOOKINGS=false desactiva la ampliación. A7 en commit manual bfd03d4; A8 sigue sin iniciar.

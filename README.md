@@ -52,7 +52,7 @@ pnpm dev:setup
 pnpm dev
 ```
 
-`dev:setup` diagnostica Node/Docker, crea `.env` desde el ejemplo solo si no existe, inicia únicamente PostgreSQL y aplica migración/seed. No sobrescribe tu configuración. Abre **http://localhost:5173** (también funciona **http://127.0.0.1:5173**); API en **http://localhost:3000/api/health**. Detén API/web con `Ctrl+C`. Para procesar los correos, abre otra terminal en esta misma carpeta y ejecuta `pnpm worker`; puedes detenerlo con `Ctrl+C` sin detener la web. En Docker el worker arranca automáticamente.
+`dev:setup` diagnostica Node/Docker, crea `.env` desde el ejemplo solo si no existe, inicia únicamente PostgreSQL y aplica migración/seed. Cada `pnpm dev` vuelve a preparar esquema y datos antes de iniciar API/web; PostgreSQL debe estar disponible. No sobrescribe tu configuración. Abre **http://localhost:5173** (también funciona **http://127.0.0.1:5173**); API en **http://localhost:3000/api/health**. Detén API/web con `Ctrl+C`. Para procesar los correos, abre otra terminal en esta misma carpeta y ejecuta `pnpm worker`; puedes detenerlo con `Ctrl+C` sin detener la web. En Docker el worker arranca automáticamente.
 
 Diagnóstico sin instalar dependencias:
 
@@ -61,6 +61,18 @@ node scripts/doctor.mjs
 ```
 
 También puedes usar PostgreSQL 16 propio: crea bases separadas `lumni_app`, `lumni_test`, `lumni_sql`, configura sus URLs y contraseñas demo en `.env`, ejecuta `pnpm db:setup` y `pnpm dev`. Los scripts aceptan variables de entorno sin exigir un archivo `.env`, como ocurre en Docker y CI.
+
+## Datos de demostración
+
+Docker y `pnpm dev` cargan automáticamente el catálogo, las cuentas demo y **24 reservas adicionales** del cliente, identificadas por `[Demo]`. En una base nueva quedan 25 reservas: siete borradores contando el original, seis confirmadas, seis completadas y seis canceladas. Hay tres salas, varias duraciones/extras, dos borradores con pasos pendientes y reservas históricas/futuras en días abiertos de Colombia. Esto permite probar filtros, detalles, retoma y paginación sin crearlas a mano.
+
+Las cotizaciones, líneas y eventos de confirmación se generan mediante los servicios del backend. Las 18 confirmaciones generan eventos reales en la outbox: el worker los captura en PostgreSQL; el seed no fabrica correos capturados ni contacta proveedores externos. En desarrollo nativo ejecuta `pnpm worker` para procesarlos.
+
+Repetir el arranque conserva fechas, estados, ediciones, contraseñas y eventos existentes: las solicitudes demo tienen IDs estables y no se actualizan al volver a sembrar. Dos arranques simultáneos no duplican reservas. Si un horario ya está reservado se busca una alternativa del mismo día; sin cupo se omite ese ejemplo, sin modificar la reserva existente. Las fechas se calculan al crear cada ejemplo; no se desplazan al reiniciar, por lo que con el tiempo los borradores pueden requerir cambiar su fecha.
+
+Puedes cargar los ejemplos sin reiniciar el servidor con `pnpm db:seed` y recargar la página. Para desactivar la ampliación, define `SEED_DEMO_BOOKINGS=false` en `.env`: conserva el seed básico y no elimina ejemplos ya creados. Las reservas adicionales se cargan solo en `NODE_ENV=development` (valor local por defecto). No cambia la base independiente ni los fixtures de la Parte 3.
+
+Verificación local del ajuste: suite completa en Node22/PostgreSQL16, seis pruebas específicas también en Node24/26, arranque Docker y `pnpm dev` con bases vacías, flag desactivado y reinicio con edición conservada. El worker real capturó18 correos; CI remoto y navegador no se ejecutaron para este ajuste.
 
 ## Si el entorno no arranca
 
@@ -97,9 +109,9 @@ En desarrollo nativo:
 pnpm verify
 ```
 
-`verify` ejecuta lint, tipos, **228 pruebas: 6 de arranque + 19 contratos + 87 de API/dominio sin BD + 6 de cliente web/fechas + 110 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
+`verify` ejecuta lint, tipos, **234 pruebas: 6 de arranque + 19 contratos + 87 de API/dominio sin BD + 6 de cliente web/fechas + 116 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
 
-La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la interfaz de A4 queda lista para revisión. Los recorridos de navegador se ejecutan por separado.
+La base A0–A6 se verificó en los tres runtimes soportados: migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. Para la ampliación del seed se ejecutó la suite completa en Node22 y sus seis pruebas específicas en Node24/26. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la interfaz de A4 queda lista para revisión. Los recorridos de navegador se ejecutan por separado.
 
 GitHub Actions está configurado con matriz Node 22/24/26 y un trabajo Docker. La ejecución remota depende de publicar el repositorio; no se afirma que ya haya ocurrido.
 
