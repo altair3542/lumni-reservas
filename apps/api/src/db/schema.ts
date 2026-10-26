@@ -12,13 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import type {
-  AssistantExtraction,
-  Customer,
-  EmailPayload,
-  Quote,
-  ServiceCode,
-} from '@lumni/shared';
+import type { AssistantSlots, Customer, EmailPayload, Quote, ServiceCode } from '@lumni/shared';
 const instant = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 export const userRole = pgEnum('user_role', ['client', 'admin']);
 export const roomSize = pgEnum('room_size', ['small', 'medium', 'large']);
@@ -186,7 +180,7 @@ export const chatConversations = pgTable(
       .references(() => users.id),
     clientRequestId: uuid('client_request_id').notNull(),
     version: integer('version').default(1).notNull(),
-    slots: jsonb('slots').$type<AssistantExtraction['patch']>().default({}).notNull(),
+    slots: jsonb('slots').$type<AssistantSlots>().default({}).notNull(),
     draftBookingId: uuid('draft_booking_id')
       .unique()
       .references(() => bookings.id),

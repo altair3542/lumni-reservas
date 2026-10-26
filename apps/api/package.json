@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
     "start": "node --env-file-if-exists=../../.env dist/index.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node ../../scripts/copy-prompts.mjs",
     "typecheck": "tsc -p tsconfig.check.json --noEmit",
     "test:integration": "node --env-file-if-exists=../../.env ../../node_modules/vitest/vitest.mjs run --config vitest.config.ts",
     "db:generate": "drizzle-kit generate",
@@ -14,25 +14,27 @@
     "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed-cli.ts",
     "test": "vitest run --config vitest.unit.config.ts",
     "worker": "tsx --env-file-if-exists=../../.env src/worker.ts",
-    "worker:start": "node --env-file-if-exists=../../.env dist/worker.js"
+    "worker:start": "node --env-file-if-exists=../../.env dist/worker.js",
+    "ai:check": "tsx --env-file-if-exists=../../.env src/assistant/check-cli.ts"
   },
   "dependencies": {
+    "@google/genai": "2.31.0",
     "@lumni/shared": "workspace:*",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
+    "luxon": "^3.7.2",
     "pg": "^8.16.3",
-    "zod": "^4.1.0",
-    "luxon": "^3.7.2"
+    "zod": "^4.1.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.3",
+    "@types/luxon": "^3.7.1",
     "@types/pg": "^8.15.5",
     "@types/supertest": "^6.0.3",
     "drizzle-kit": "^0.31.4",
     "supertest": "^7.1.4",
-    "tsx": "^4.20.5",
-    "@types/luxon": "^3.7.1"
+    "tsx": "^4.20.5"
   }
 }

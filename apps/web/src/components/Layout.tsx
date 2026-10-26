@@ -22,9 +22,11 @@ export function Layout() {
         ? 'Detalle de tu reserva'
         : location.pathname === '/reservas'
           ? 'Mis reservas'
-          : location.pathname === '/salir'
-            ? 'Cerrar sesión'
-            : 'Reservar espacio';
+          : location.pathname.startsWith('/asistente')
+            ? 'Asistente de reservas'
+            : location.pathname === '/salir'
+              ? 'Cerrar sesión'
+              : 'Reservar espacio';
   useEffect(() => {
     document.title = `Lumni · ${pageName}`;
   }, [pageName]);
@@ -36,6 +38,7 @@ export function Layout() {
     : [
         { to: '/salas', label: 'Reservar espacio', icon: '▦' },
         { to: '/reservas', label: 'Mis reservas', icon: '▤' },
+        { to: '/asistente', label: 'Asistente de reservas', icon: '✧' },
       ];
   return (
     <div className="workspace">

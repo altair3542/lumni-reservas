@@ -11,6 +11,9 @@ import {
   useSession,
   homeFor,
 } from './auth/Session.js';
+const ChatPage = lazy(() =>
+  import('./assistant/ChatPage.js').then((module) => ({ default: module.ChatPage })),
+);
 const QuotePage = lazy(() =>
   import('./features/quote/QuotePage.js').then((module) => ({ default: module.QuotePage })),
 );
@@ -86,6 +89,8 @@ const router = createHashRouter([
                 element: <RequireRole role="client" />,
                 children: [
                   { path: '/salas', element: <QuotePage /> },
+                  { path: '/asistente', element: <ChatPage /> },
+                  { path: '/asistente/:id', element: <ChatPage /> },
                   { path: '/reservas', element: <BookingListPage /> },
                   { path: '/reservas/:id', element: <BookingPage /> },
                 ],

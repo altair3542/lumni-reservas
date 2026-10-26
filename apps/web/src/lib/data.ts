@@ -1,4 +1,7 @@
 import {
+  conversationResponseSchema,
+  conversationListSchema,
+  type ChatInput,
   adminBookingDetailSchema,
   adminBookingPageSchema,
   bookingListSchema,
@@ -16,6 +19,19 @@ const send = (method: string, value: unknown): RequestInit => ({
   body: JSON.stringify(value),
 });
 export const api = {
+  conversations: () => apiRequest('/chat/conversations', conversationListSchema),
+  conversation: (id: string) => apiRequest(`/chat/conversations/${id}`, conversationResponseSchema),
+  createConversation: (clientRequestId: string) =>
+    apiRequest(
+      '/chat/conversations',
+      conversationResponseSchema,
+      send('POST', { clientRequestId }),
+    ),
+  chat: (id: string, input: ChatInput) =>
+    apiRequest(`/chat/conversations/${id}/messages`, conversationResponseSchema, {
+      ...send('POST', input),
+      signal: AbortSignal.timeout(25000),
+    }),
   rooms: () => apiRequest('/rooms', roomListSchema),
   services: () => apiRequest('/services', serviceListSchema),
   quote: (input: QuoteRequest) => apiRequest('/quotes', quoteSchema, send('POST', input)),

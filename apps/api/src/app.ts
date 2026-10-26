@@ -23,16 +23,21 @@ import { createBookingRouter } from './bookings/routes.js';
 import { BookingService } from './bookings/service.js';
 import { createAdminRouter } from './admin/routes.js';
 import { AdminService } from './admin/service.js';
+import { AssistantService } from './assistant/service.js';
+import { createAssistantRouter } from './assistant/routes.js';
+import { createLlmClient, type LlmClient } from './assistant/llm.js';
 export type AppOptions = {
   database: Database;
   config: Config;
   now?: () => Date;
+  llm?: LlmClient;
   logError?: (requestId: string) => void;
 };
 export function createApp({
   database,
   config,
   now = () => new Date(),
+  llm = createLlmClient(),
   logError = (id) => console.error('API_ERROR', id),
 }: AppOptions): Express {
   const app = express();
@@ -109,6 +114,12 @@ export function createApp({
     auth.required,
     requireRole('admin'),
     createAdminRouter(new AdminService(database, now)),
+  );
+  app.use(
+    '/api/chat',
+    auth.required,
+    requireRole('client'),
+    createAssistantRouter(new AssistantService(database, llm, now)),
   );
   if (config.webDistDir) app.use(express.static(config.webDistDir));
   app.use((_req, _res) => {

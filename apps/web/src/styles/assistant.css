@@ -1,0 +1,105 @@
+.chat-intro {
+  max-width: 780px;
+  margin-bottom: 24px;
+}
+.chat-intro > p {
+  max-width: 590px;
+}
+.chat-orbit {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--lime);
+  font-size: 30px;
+  margin-bottom: 12px;
+}
+.conversation-list {
+  max-width: 780px;
+}
+.conversation-list ul {
+  list-style: none;
+  padding: 0;
+}
+.conversation-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.chat-panel {
+  max-width: 920px;
+  padding: 28px;
+}
+.chat-messages {
+  display: grid;
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+.chat-message {
+  max-width: 92%;
+  padding: 18px 22px;
+  border-radius: 18px;
+  overflow-wrap: anywhere;
+}
+.chat-message p {
+  white-space: pre-wrap;
+  margin: 8px 0;
+}
+.chat-message.user {
+  justify-self: end;
+  background: #edf4de;
+  border-bottom-right-radius: 4px;
+}
+.chat-message.assistant {
+  justify-self: start;
+  background: #f7f8f3;
+  border-bottom-left-radius: 4px;
+}
+.chat-quote {
+  margin-top: 18px;
+  padding: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.chat-quote .button {
+  margin-top: 14px;
+}
+.chat-composer {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.chat-composer textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 92px;
+}
+.disabled-link {
+  pointer-events: none;
+  opacity: 0.5;
+}
+@media (max-width: 700px) {
+  .chat-panel {
+    padding: 16px;
+  }
+  .chat-message {
+    max-width: 100%;
+    padding: 14px;
+  }
+  .chat-quote {
+    padding: 14px;
+  }
+  .chat-composer .row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+}

@@ -1,6 +1,6 @@
 # Lumni Reservas
 
-Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: cotizador, reservas en tres pasos y administración disponibles desde la interfaz.** La confirmación crea un evento de correo y un worker separado guarda su captura local en PostgreSQL. El chat está pendiente.
+Aplicación de reservas de salas para un coworking, con React, Node/Express, TypeScript y PostgreSQL. **Estado: cotizador, reservas en tres pasos y administración disponibles desde la interfaz.** La confirmación crea un evento de correo y un worker separado guarda su captura local en PostgreSQL. El asistente de reservas está integrado y verificado con Gemini 3.5 Flash-Lite, con conversación persistente y borrador propio.
 
 ## Ejecutar la demo (recomendado para evaluación)
 
@@ -97,7 +97,7 @@ En desarrollo nativo:
 pnpm verify
 ```
 
-`verify` ejecuta lint, tipos, **196 pruebas: 6 de arranque + 19 contratos + 76 de API/dominio sin BD + 6 de cliente web/fechas + 89 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
+`verify` ejecuta lint, tipos, **228 pruebas: 6 de arranque + 19 contratos + 87 de API/dominio sin BD + 6 de cliente web/fechas + 110 de integración PostgreSQL**, y build. La integración exige `TEST_DATABASE_URL` y solo admite bases `lumni_test` o `lumni_test_<sufijo>`. No se sustituye PostgreSQL con mocks.
 
 La verificación local cubre los tres runtimes soportados, migraciones sobre base vacía, seed repetido, login real cliente/admin, expiración/logout, roles y exclusión de solapamientos con conexiones independientes. La demo comprueba además HTML, salud y sesión/catálogo/logout por HTTP. La verificación descrita se ejecutó localmente; la interfaz de A4 queda lista para revisión. Los recorridos de navegador se ejecutan por separado.
 
@@ -123,7 +123,7 @@ El horario siempre se presenta en America/Bogota, también si el equipo está en
 
 ## Pruebas de navegador
 
-Además de `pnpm verify`, hay **11 recorridos Playwright** con PostgreSQL real: rechazo de correo concatenado, cliente→confirmación→captura real→admin/cancelar, retoma en navegador nuevo, red, versiones, colisión/alternativa, sesión, cambios sin guardar, paginación/filtros/403, móvil y estados/capturas de correo. Se ejecutan con zona de navegador Pacific/Auckland para comprobar la presentación en Colombia.
+Además de `pnpm verify`, hay **13 recorridos Playwright**: 11 con backend/PostgreSQL reales y 2 de UI de chat con contrato HTTP simulado. Los 11 anteriores cubren: rechazo de correo concatenado, cliente→confirmación→captura real→admin/cancelar, retoma en navegador nuevo, red, versiones, colisión/alternativa, sesión, cambios sin guardar, paginación/filtros/403, móvil y estados/capturas de correo. Se ejecutan con zona de navegador Pacific/Auckland para comprobar la presentación en Colombia.
 
 Usa una demo **aislada**, que no contenga tus datos de desarrollo. En macOS/Linux:
 
@@ -133,7 +133,7 @@ pnpm --filter @lumni/web exec playwright install chromium
 E2E_BASE_URL=http://localhost:8097 E2E_COMPOSE_PROJECT=lumni-e2e pnpm test:e2e
 ```
 
-En PowerShell, establece esas variables con `$env:NOMBRE="valor"` antes del comando. El runner exige proyecto de pruebas y comprueba su puerto publicado antes de crear fixtures. El flujo principal comprueba la captura producida por el worker real. El recorrido dedicado a visualizar estados usa fixtures failed/sent explícitos; no demuestra reintentos del worker. Ninguna prueba representa un envío externo. No hay endpoints de producción para forzar fallos.
+En PowerShell, establece esas variables con `$env:NOMBRE="valor"` antes del comando. El runner exige proyecto de pruebas y comprueba su puerto publicado antes de crear fixtures. El flujo principal comprueba la captura producida por el worker real. El recorrido dedicado a visualizar estados usa fixtures failed/sent explícitos; no demuestra reintentos del worker. Ninguna prueba representa un envío externo. Los dos recorridos de chat verifican historial visual, apertura de un borrador real, escape de HTML y texto/ID conservados al reintentar un error. Su persistencia y orquestación se prueban por separado con PostgreSQL real y LlmClient falso; no sustituyen una demostración contra Gemini. No hay endpoints de producción para forzar fallos.
 
 Resultados y capturas de fallo van al directorio temporal del sistema, o a `E2E_OUTPUT_DIR` si lo defines. No se guardan cookies ni trazas de autenticación. Puedes usar `PLAYWRIGHT_CHROMIUM_PATH` para un Chromium instalado; normalmente Playwright usa su navegador compatible descargado por el comando anterior.
 
@@ -259,10 +259,61 @@ Para ver un detalle, usa el ID obtenido en `/api/admin/bookings/<id>`. La cancel
 
 Los correos pasan de pending a sent al guardar su captura; si agotan los reintentos quedan failed, consultables por administrador. El panel visual permite consultar estos estados y el contenido de cada confirmación; nunca inserta el HTML del correo como contenido ejecutable.
 
+## Asistente de reservas con Gemini
+
+Configura únicamente el `.env` del backend, con una clave de tu proyecto personal:
+
+```dotenv
+AI_API_KEY=tu_clave_personal
+AI_MODEL=gemini-3.5-flash-lite
+```
+
+El modelo es configurable; comprueba su disponibilidad y límites en tu proyecto. No uses prefijo `VITE_` para la clave ni la incluyas en Git. En desarrollo, reinicia `pnpm dev` después de cambiar `.env`. En Docker, `docker compose up --build -d --wait` aplica la configuración al servicio app; el worker no recibe la clave.
+
+Puedes comprobar una sola petición real desde tu propia terminal, sin imprimir la clave:
+
+```sh
+pnpm ai:check
+```
+
+Playground y API pueden tener acceso/cuotas diferentes. Durante la verificación del 2026-10-25, Gemini 3.8 Flash respondió en Playground pero falló por API con503/timeout, también desde la terminal del usuario. Se seleccionó Gemini 3.5 Flash-Lite tras verificar generación y extracción reales. Un recorrido HTTP de tres mensajes con PostgreSQL creó un draft de195000 COP para seis personas, sábado09:00/dos horas/proyector; recargar y repetir el mensaje conservaron historial/draft, con tres llamadas al modelo y cero eventos de confirmación. Hubo fallos transitorios antes de ese recorrido exitoso; la causa de los503 no se presume. No se usa un fake como respaldo del producto. Sin clave o ante un fallo del proveedor, la aplicación conserva el estado y el texto por enviar, ofrece reintentar y permite usar el formulario normal.
+
+Como cliente, abre **Asistente de reservas → Iniciar conversación**. Ejemplo: «Una sala para 6 personas el sábado en la mañana con proyector». El servidor elige la sala más pequeña con capacidad suficiente y pide un dato faltante por turno. «En la mañana» no fija una hora ni duración; responde, por ejemplo, `09:00` y `2 horas`. Si no mencionaste servicios, debes elegir café, proyector, ambos o sin extras.
+
+La tarjeta presenta la respuesta del cotizador, con horarios de Colombia. Si no hay cupo, puedes aceptar una alternativa explícitamente para volver a consultar; no se cambia el horario por cuenta del usuario. Con datos suficientes se guarda un único draft con contacto del perfil autenticado. **Revisar borrador** abre el wizard existente; la confirmación requiere su botón normal. Una conversación ligada a una reserva ya confirmada exige abrir otra para una solicitud nueva.
+
+Las conversaciones propias se recuperan desde la lista del asistente y sus enlaces `/#/asistente/<id>`. Historial, fecha resuelta, slots y vínculo al draft viven en PostgreSQL. `Actualizar conversación` recupera cambios de otra pestaña sin descartar el texto por enviar. Si editaste el draft en el formulario, el chat no lo sobrescribe: continúa allí o abre otra conversación.
+
+### Las cuatro reglas del asistente
+
+El prompt versionado está en `apps/api/src/prompts/booking-assistant.md`. La aplicación hace cumplir los límites además del prompt:
+
+1. **No inventar datos.** La respuesta estructurada se valida con Zod strict, exige cita literal por campo y contrasta números, unidades, hora, fecha, servicios y sala con código y catálogo. Una salida inválida no modifica historial, slots ni reservas. Las expresiones ambiguas piden aclaración. La fecha relativa se resuelve una vez con reloj/Bogotá; recargar no la desplaza.
+2. **No calcular precio ni disponibilidad.** El modelo no recibe tarifas ni tiene campos para importes/disponibilidad. Las tarjetas usan `QuoteService` y el snapshot guardado por `BookingService`; nunca prosa del LLM.
+3. **No confirmar/cancelar ni ver datos ajenos.** El proveedor no recibe herramientas ni cookies/contactos del perfil. La sesión determina dueño y rol. Las rutas por ID aplican filtro de dueño/404 y cliente; no existe herramienta para confirmar, cancelar o listar otros clientes.
+4. **No aceptar instrucciones que amplíen permisos.** El texto del usuario no altera capacidades: esquema cerrado, evidencia contrastada, autorización de servidor y ausencia de herramientas privilegiadas. Un rechazo escrito por el modelo no es la única defensa. Estas restricciones no equivalen a prometer inmunidad absoluta a prompt injection; el usuario revisa el draft antes de confirmar.
+
+`LlmClient` es sustituible en tests; el producto usa el SDK oficial `@google/genai`, timeout de12s, máximo2048 tokens de salida y seis mensajes recientes como contexto. Input máximo1000 caracteres; respuesta máxima16000; conversación máxima80 mensajes (40 turnos). Una petición activa por cliente en el proceso. Los diez intentos por minuto incluyen fallos en memoria del proceso; los diez mensajes guardados por minuto se comprueban también en PG entre reinicios. Para un despliegue con múltiples instancias se necesitaría un limitador compartido de intentos fallidos; la demo no lo presenta como un control distribuido.
+
+La llamada externa sucede fuera de transacción. Después, el servidor bloquea la conversación y verifica `expectedVersion`; mensaje, slots y creación/actualización del draft se confirman juntos. `clientMessageId` identifica reintentos: mismo ID/contenido devuelve lo guardado, ID reutilizado con otro contenido o versión vieja produce409. Los cambios manuales del draft se protegen con su versión. Los logs del chat contienen requestId, latencia y resultado, sin cuerpos, contacto ni clave.
+
+API de chat, solo cliente autenticado:
+
+| Método y ruta | Entrada / resultado |
+| --- | --- |
+| POST `/api/chat/conversations` | `{ clientRequestId }`; creación idempotente propia. |
+| GET `/api/chat/conversations` | Últimas20 conversaciones propias. |
+| GET `/api/chat/conversations/:id` | Historial, slots, versión y draft vinculado. |
+| POST `/api/chat/conversations/:id/messages` | `{ kind: "message", content, clientMessageId, expectedVersion }`, o `kind: "accept_alternative"` sin content. |
+
+Las respuestas individuales contienen `{ conversation }`. Datos inválidos400, sesión401, rol403, dueño ajeno404, versión/draft409, límites429 y proveedor503. No hay endpoint para insertar precios ni asignar estado de reserva desde el chat.
+
+Documentación del proveedor: [SDK oficial](https://github.com/googleapis/js-genai), [salida estructurada](https://ai.google.dev/gemini-api/docs/structured-output), [modelos y precios](https://ai.google.dev/gemini-api/docs/pricing). Usar datos ficticios en esta demo.
+
 ## Estructura y decisiones
 
-- `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador, reservas y administración autenticadas.
-- `apps/web`: React 18/Vite, rutas por rol, cotizador, reservas/wizard y administración; cliente API validado, React Hook Form, TanStack Query, CSS por responsabilidad y carga diferida de pantallas.
+- `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador, reservas, administración y asistente autenticados.
+- `apps/web`: React 18/Vite, rutas por rol, cotizador, reservas/wizard y administración; cliente API validado, React Hook Form, TanStack Query, CSS por responsabilidad y carga diferida de pantallas y conversación de reservas.
 - `packages/shared`: contratos Zod estrictos de login, quote, draft, confirmación/versiones, admin, correo, extracción IA y errores HTTP.
 - `apps/api/src/db` y `apps/api/drizzle`: diez tablas, migraciones Drizzle/SQL, checks, claves únicas y seed.
 - `Dockerfile`, `docker-compose.yml`, `infra/docker`: Node controlado dentro de la imagen, web compilada servida por Express, PostgreSQL 16 y arranque idempotente sin depender de .env del host.
@@ -282,8 +333,8 @@ La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y
 
 ## Alcance pendiente y uso de IA
 
-Pendientes: revisión de A5; A6 IA; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
+Pendientes: revisión de A6; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
 
-Codex asistió en la base, cotizador, reservas/administración, interfaz, worker de captura local y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
+Codex asistió en la base, cotizador, reservas/administración, interfaz, worker de captura local, asistente con validación estructurada y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 
 Las instrucciones de trabajo de esta aplicación están en `AGENTS.md`. La planeación, los briefs y las referencias se mantienen fuera del repositorio y no se necesitan para instalar, ejecutar o probar la aplicación. Los commits y sus mensajes son manuales del usuario; no se hace staging, commit ni publicación automática.

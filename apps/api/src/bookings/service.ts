@@ -57,9 +57,12 @@ export class BookingService {
   constructor(
     private readonly database: Database,
     private readonly now: () => Date = () => new Date(),
+    private readonly transactionClient?: PoolClient,
   ) {}
 
   private async transaction<T>(operation: (client: PoolClient) => Promise<T>): Promise<T> {
+    // Permite componer guardado de draft y conversación en una única transacción.
+    if (this.transactionClient) return operation(this.transactionClient);
     const client = await this.database.pool.connect();
     try {
       await client.query('BEGIN');

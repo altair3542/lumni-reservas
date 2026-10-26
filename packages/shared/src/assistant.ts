@@ -5,6 +5,9 @@ import {
   serviceCodesSchema,
   startTimeSchema,
   uuidSchema,
+  quoteSchema,
+  versionSchema,
+  instantSchema,
 } from './contracts.js';
 export const dateReferenceSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('absolute'), date: dateSchema }).strict(),
@@ -55,5 +58,71 @@ export const assistantExtractionSchema = z
         message: 'Intención ajena sin datos de reserva',
       });
   });
-// A6 validará además citas contra el mensaje, catálogo y valores extraídos en código.
+export const assistantSlotsSchema = assistantPatchSchema
+  .extend({
+    date: dateSchema.optional(),
+    draftVersion: versionSchema.optional(),
+  })
+  .strict();
+export const chatCreateSchema = z.object({ clientRequestId: uuidSchema }).strict();
+const messageBase = { clientMessageId: uuidSchema, expectedVersion: versionSchema };
+export const chatInputSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      ...messageBase,
+      kind: z.literal('message'),
+      content: z.string().trim().min(1).max(1000),
+    })
+    .strict(),
+  z.object({ ...messageBase, kind: z.literal('accept_alternative') }).strict(),
+]);
+export const chatCardSchema = z
+  .object({
+    quote: quoteSchema,
+    roomName: z.string().min(1),
+    draftBookingId: uuidSchema.nullable(),
+  })
+  .strict();
+export const chatMessageSchema = z
+  .object({
+    id: uuidSchema,
+    role: z.enum(['user', 'assistant']),
+    kind: z.enum(['message', 'accept_alternative']).nullable(),
+    content: z.string().max(2000),
+    clientMessageId: uuidSchema.nullable(),
+    card: chatCardSchema.nullable(),
+    createdAt: instantSchema,
+  })
+  .strict();
+export const conversationSchema = z
+  .object({
+    id: uuidSchema,
+    version: versionSchema,
+    slots: assistantSlotsSchema,
+    draftBookingId: uuidSchema.nullable(),
+    createdAt: instantSchema,
+    updatedAt: instantSchema,
+    messages: z.array(chatMessageSchema).max(80),
+  })
+  .strict();
+export const conversationResponseSchema = z.object({ conversation: conversationSchema }).strict();
+export const conversationListSchema = z
+  .object({
+    items: z
+      .array(
+        z
+          .object({
+            id: uuidSchema,
+            updatedAt: instantSchema,
+            draftBookingId: uuidSchema.nullable(),
+          })
+          .strict(),
+      )
+      .max(20),
+  })
+  .strict();
+export type AssistantSlots = z.infer<typeof assistantSlotsSchema>;
+export type ChatInput = z.infer<typeof chatInputSchema>;
+export type ChatCard = z.infer<typeof chatCardSchema>;
+export type Conversation = z.infer<typeof conversationSchema>;
 export type AssistantExtraction = z.infer<typeof assistantExtractionSchema>;

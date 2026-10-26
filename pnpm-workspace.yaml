@@ -3,7 +3,9 @@ packages:
   - packages/*
 
 allowBuilds:
+  '@google/genai': false
   esbuild: true
+  protobufjs: false
 storeDir: .pnpm-store
 cacheDir: .pnpm-store/cache
 verifyDepsBeforeRun: false
