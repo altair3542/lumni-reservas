@@ -338,6 +338,12 @@ El comando crea y retira su propio PostgreSQL 16 sin publicar puertos. Verificad
 
 El informe mensual incluye el mes actual hasta ahora y once anteriores; atribuye horas e ingresos al mes de inicio sin prorratear cruces. Los pagos con importe presente cuentan aunque `paid_at` sea nulo, pues el esquema no define otro estado de liquidación. Los demás supuestos, resultados esperados y comandos `psql` están en [`sql/README.md`](sql/README.md). La respuesta sobre índices propone qué medir; no se afirma haber reproducido cinco millones de pagos ni los 40 segundos del escenario.
 
+## Parte 4 y bonus Rails
+
+[`INCIDENTE.md`](INCIDENTE.md) desarrolla la hipótesis del vencimiento nocturno, cómo validarla, la recuperación con deduplicación y conciliación, pruebas antes de producción, responsables de aprobación y prevención. Incluye el mensaje de cuatro líneas para comercial. Se verificó una exportación de **dos páginas A4**, con texto de11,5pt y márgenes de56pt. Es una propuesta sobre el escenario del enunciado; no implementa WhatsApp ni afirma que se consultó producción o se ejecutaron reenvíos.
+
+[`BONUS_RAILS.md`](BONUS_RAILS.md) explica el problema de destruir/regenerar factura al guardar una reserva confirmada y propone creación transaccional, bloqueo, unicidad y un snapshot financiero. El Ruby es ilustrativo y referencia documentación oficial Rails8.1; no es parte del runtime TypeScript ni una integración Rails probada.
+
 ## Estructura y decisiones
 
 - `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador, reservas, administración y asistente autenticados.
@@ -361,7 +367,7 @@ La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y
 
 ## Alcance pendiente y uso de IA
 
-El usuario autorizó avanzar desde A6 y su ajuste visual guardado en el commit `134420c`, sin atribuir una revisión detallada de código. A7 SQL está implementada y verificada, pendiente de revisión humana. Faltan A8 incidente/bonus y A9/A10 cierre. La fecha límite oficial sigue pendiente de confirmación.
+El usuario autorizó continuar a A8 después de SQL y la ampliación del seed. A7 está en el commit manual `bfd03d4`; A8 incidente/bonus está redactada y verificada documentalmente, pendiente de revisión humana. Faltan A9 README/evidencias y A10 auditoría final. No se atribuye una revisión detallada de código al candidato. La fecha límite oficial sigue pendiente de confirmación.
 
 Codex asistió en la base, cotizador, reservas/administración, interfaz, worker de captura local, asistente con validación estructurada, consultas SQL y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 
