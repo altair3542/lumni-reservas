@@ -1,10 +1,13 @@
-import { Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Loading } from './Feedback.js';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { healthSchema } from '@lumni/shared';
 import { apiRequest } from '../api.js';
 import { useSession } from '../auth/Session.js';
+const AssistantDock = lazy(() =>
+  import('../assistant/AssistantDock.js').then((module) => ({ default: module.AssistantDock })),
+);
 export function Layout() {
   const { user } = useSession();
   const location = useLocation();
@@ -38,7 +41,6 @@ export function Layout() {
     : [
         { to: '/salas', label: 'Reservar espacio', icon: '▦' },
         { to: '/reservas', label: 'Mis reservas', icon: '▤' },
-        { to: '/asistente', label: 'Asistente de reservas', icon: '✧' },
       ];
   return (
     <div className="workspace">
@@ -105,6 +107,11 @@ export function Layout() {
           <span>Todos los horarios corresponden a Colombia.</span>
         </footer>
       </div>
+      {user?.role === 'client' && location.pathname !== '/salir' && (
+        <Suspense fallback={null}>
+          <AssistantDock key={user.id} ownerId={user.id} />
+        </Suspense>
+      )}
       <span className="sr-only" aria-live="polite">
         {pageName}
       </span>
