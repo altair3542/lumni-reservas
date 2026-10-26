@@ -37,6 +37,8 @@ jobs:
       - run: pnpm db:setup
       - run: pnpm db:seed
       - run: pnpm verify
+      - run: pnpm test:sql
+        if: matrix.node == '22.18.0'
   docker:
     runs-on: ubuntu-latest
     steps:

@@ -11,7 +11,7 @@
     "dev": "pnpm --filter @lumni/shared build && pnpm --parallel --filter @lumni/api --filter @lumni/web dev",
     "build": "pnpm -r build",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "pnpm --filter @lumni/shared build && pnpm -r typecheck",
+    "typecheck": "pnpm --filter @lumni/shared build && pnpm -r typecheck && tsc -p sql/tsconfig.json",
     "test": "node --test scripts/*.test.mjs && pnpm --filter @lumni/shared build && pnpm --filter @lumni/shared test && pnpm --filter @lumni/api test && pnpm --filter @lumni/web test",
     "test:integration": "pnpm --filter @lumni/shared build && pnpm --filter @lumni/api test:integration",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build",
@@ -21,12 +21,13 @@
     "db:setup": "pnpm db:migrate && pnpm db:seed",
     "doctor": "node scripts/doctor.mjs",
     "dev:setup": "node scripts/setup.mjs",
-    "format": "prettier --write apps packages scripts infra \"*.js\" \"*.json\" .prettierrc.json",
-    "format:check": "prettier --check apps packages scripts infra \"*.js\" \"*.json\" .prettierrc.json",
+    "format": "prettier --write apps packages scripts infra sql \"*.js\" \"*.json\" .prettierrc.json",
+    "format:check": "prettier --check apps packages scripts infra sql \"*.js\" \"*.json\" .prettierrc.json",
     "test:e2e": "node scripts/e2e.mjs",
     "worker": "pnpm --filter @lumni/shared build && pnpm --filter @lumni/api worker",
     "worker:start": "pnpm --filter @lumni/api worker:start",
-    "ai:check": "pnpm --filter @lumni/api ai:check"
+    "ai:check": "pnpm --filter @lumni/api ai:check",
+    "test:sql": "node sql/check.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",

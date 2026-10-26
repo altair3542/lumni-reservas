@@ -312,6 +312,20 @@ Las respuestas individuales contienen `{ conversation }`. Datos inválidos400, s
 
 Documentación del proveedor: [SDK oficial](https://github.com/googleapis/js-genai), [salida estructurada](https://ai.google.dev/gemini-api/docs/structured-output), [modelos y precios](https://ai.google.dev/gemini-api/docs/pricing). Usar datos ficticios en esta demo.
 
+## Parte 3: SQL
+
+Las cinco respuestas están en [`consultas.sql`](consultas.sql). Usa el DDL independiente del enunciado, reproducido en `sql/schema.sql`; no se ejecutan sobre las tablas de la aplicación. Los datos de `sql/seed.sql` son sintéticos propios, pendientes de contrastar con el script del evaluador.
+
+Con Docker encendido, desde esta carpeta:
+
+```sh
+pnpm test:sql
+```
+
+El comando crea y retira su propio PostgreSQL 16 sin publicar puertos. Verificado en Node 22/24/26: seis escenarios y 48 comprobaciones por runtime, incluyendo pagos múltiples, 30 días exactos, extremos contiguos, mes de Colombia, cambio de año y febrero bisiesto. `pnpm verify` comprueba la aplicación; SQL tiene este comando separado y un paso de CI propio.
+
+El informe mensual incluye el mes actual hasta ahora y once anteriores; atribuye horas e ingresos al mes de inicio sin prorratear cruces. Los pagos con importe presente cuentan aunque `paid_at` sea nulo, pues el esquema no define otro estado de liquidación. Los demás supuestos, resultados esperados y comandos `psql` están en [`sql/README.md`](sql/README.md). La respuesta sobre índices propone qué medir; no se afirma haber reproducido cinco millones de pagos ni los 40 segundos del escenario.
+
 ## Estructura y decisiones
 
 - `apps/api`: Express 5, `createApp`, health, sesiones, catálogos, cotizador, reservas, administración y asistente autenticados.
@@ -321,7 +335,7 @@ Documentación del proveedor: [SDK oficial](https://github.com/googleapis/js-gen
 - `Dockerfile`, `docker-compose.yml`, `infra/docker`: Node controlado dentro de la imagen, web compilada servida por Express, PostgreSQL 16 y arranque idempotente sin depender de .env del host.
 - `scripts`: diagnóstico, preparación nativa, demo y comprobación HTTP.
 
-PostgreSQL tiene tres bases separadas. `infra/postgres/init.sql` crea las de pruebas/Parte 3 al inicializar el volumen. La Parte 3 conservará su DDL independiente en A7. Zona America/Bogota; dinero entero COP. Capacidades 4/8/16 y extras proyector 20.000/café 10.000 COP son supuestos documentados.
+PostgreSQL tiene tres bases separadas. `infra/postgres/init.sql` crea las de pruebas/Parte 3 al inicializar el volumen. La Parte 3 conserva su DDL independiente en `sql/schema.sql`; su runner usa un contenedor temporal adicional. La app usa zona America/Bogota y dinero entero COP; Parte 3 mantiene `numeric(14,2)` del enunciado. Capacidades 4/8/16 y extras proyector 20.000/café 10.000 COP son supuestos documentados.
 
 Los drafts admiten datos parciales. Confirmed/completed exigen datos completos y rangos positivos. `bookings_no_overlap` es una exclusión GiST parcial para esos estados con intervalos `[inicio, fin)`, escrita explícitamente en `0001_booking_exclusion.sql`. Para verla:
 
@@ -335,8 +349,8 @@ La sesión usa cookie opaca HttpOnly/SameSite=Lax; hash de token en PostgreSQL y
 
 ## Alcance pendiente y uso de IA
 
-Pendientes: revisión de A6; A7 SQL; A8 incidente/bonus; A9/A10 cierre. Las tablas y contratos preparatorios no equivalen a esos flujos. La fecha límite oficial sigue pendiente de confirmación.
+El usuario autorizó avanzar desde A6 y su ajuste visual guardado en el commit `134420c`, sin atribuir una revisión detallada de código. A7 SQL está implementada y verificada, pendiente de revisión humana. Faltan A8 incidente/bonus y A9/A10 cierre. La fecha límite oficial sigue pendiente de confirmación.
 
-Codex asistió en la base, cotizador, reservas/administración, interfaz, worker de captura local, asistente con validación estructurada y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
+Codex asistió en la base, cotizador, reservas/administración, interfaz, worker de captura local, asistente con validación estructurada, consultas SQL y correcciones de portabilidad/origen/formato. Ejemplo real corregido: la restricción inicial rechazaba Node 26 sin probarlo; se amplió el soporte tras ejecutar las comprobaciones con Node 22/24/26 y se añadió una ruta Docker sin Node local. También se corrigieron configuración de pnpm y errores de tipos detectados por las herramientas. Codex ejecutó las comprobaciones descritas; la revisión del candidato permanece pendiente. No se le atribuyen pruebas que no haya ejecutado.
 
 Las instrucciones de trabajo de esta aplicación están en `AGENTS.md`. La planeación, los briefs y las referencias se mantienen fuera del repositorio y no se necesitan para instalar, ejecutar o probar la aplicación. Los commits y sus mensajes son manuales del usuario; no se hace staging, commit ni publicación automática.
