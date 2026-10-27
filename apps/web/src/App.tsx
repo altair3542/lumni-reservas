@@ -35,12 +35,6 @@ const AdminBookingPage = lazy(() =>
     default: module.AdminBookingPage,
   })),
 );
-const EmailsPage = lazy(() =>
-  import('./features/admin/EmailsPage.js').then((module) => ({ default: module.EmailsPage })),
-);
-const EmailPage = lazy(() =>
-  import('./features/admin/EmailsPage.js').then((module) => ({ default: module.EmailPage })),
-);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: false, refetchOnWindowFocus: false, staleTime: 15000 },
@@ -100,8 +94,6 @@ const router = createHashRouter([
                 children: [
                   { path: '/admin/reservas', element: <AdminBookingsPage /> },
                   { path: '/admin/reservas/:id', element: <AdminBookingPage /> },
-                  { path: '/admin/correos', element: <EmailsPage /> },
-                  { path: '/admin/correos/:id', element: <EmailPage /> },
                 ],
               },
               {

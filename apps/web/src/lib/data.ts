@@ -6,8 +6,6 @@ import {
   adminBookingPageSchema,
   bookingListSchema,
   bookingResponseSchema,
-  emailDetailSchema,
-  emailQueuePageSchema,
   roomListSchema,
   serviceListSchema,
   quoteSchema,
@@ -46,8 +44,6 @@ export const api = {
   adminBooking: (id: string) => apiRequest(`/admin/bookings/${id}`, adminBookingDetailSchema),
   changeStatus: (id: string, action: 'cancel' | 'complete', input: unknown) =>
     apiRequest(`/admin/bookings/${id}/${action}`, bookingResponseSchema, send('POST', input)),
-  emails: (query: string) => apiRequest(`/admin/emails?${query}`, emailQueuePageSchema),
-  email: (id: string) => apiRequest(`/admin/emails/${id}`, emailDetailSchema),
 };
 export type Room = Awaited<ReturnType<typeof api.rooms>>['items'][number];
 export type Service = Awaited<ReturnType<typeof api.services>>['items'][number];

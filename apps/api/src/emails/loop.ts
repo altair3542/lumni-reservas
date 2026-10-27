@@ -8,7 +8,7 @@ export async function consumeEmails(
     pollIntervalMs: number;
     onResult?: (result: Exclude<DeliveryResult, { status: 'idle' }>) => void;
     onCycle?: () => Promise<void>;
-    onError?: () => void;
+    onError?: (error: unknown) => void;
   },
 ) {
   while (!options.signal.aborted) {
@@ -19,8 +19,8 @@ export async function consumeEmails(
         options.onResult?.(result);
       }
       if (!options.signal.aborted) await options.onCycle?.();
-    } catch {
-      options.onError?.();
+    } catch (error) {
+      options.onError?.(error);
     }
     if (options.signal.aborted) break;
     try {

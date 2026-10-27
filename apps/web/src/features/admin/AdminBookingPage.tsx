@@ -1,6 +1,6 @@
 import { Modal } from '../../components/Modal.js';
 import { useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cancelSchema, uuidSchema } from '@lumni/shared';
 import { api } from '../../lib/data.js';
@@ -21,7 +21,8 @@ export function AdminBookingPage() {
     queryKey: ['admin-booking', id],
     queryFn: () => api.adminBooking(id),
     enabled: valid,
-    staleTime: Infinity,
+    staleTime: 0,
+    refetchInterval: (query) => (query.state.data?.email?.status === 'pending' ? 2000 : false),
   });
   const rooms = useQuery({ queryKey: ['rooms'], queryFn: api.rooms });
   const queryClient = useQueryClient();
@@ -138,9 +139,27 @@ export function AdminBookingPage() {
                     </div>
                   )}
                 </dl>
-                <Link className="inline-link" to={`/admin/correos/${email.id}`}>
-                  Ver contenido y estado →
-                </Link>
+                {email.capture ? (
+                  <>
+                    <h3>Confirmación capturada</h3>
+                    <dl className="details">
+                      <div>
+                        <dt>Para</dt>
+                        <dd>{email.capture.toEmail}</dd>
+                      </div>
+                      <div>
+                        <dt>Asunto</dt>
+                        <dd>{email.capture.subject}</dd>
+                      </div>
+                    </dl>
+                    <pre className="email-body">{email.capture.textBody}</pre>
+                  </>
+                ) : (
+                  <p className="muted">Este correo todavía no tiene una captura local.</p>
+                )}
+                <p className="form-note">
+                  Captura local de demostración; no se envía a un buzón externo.
+                </p>
               </>
             ) : (
               <p className="muted">El correo se genera al confirmar una reserva.</p>

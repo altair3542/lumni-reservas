@@ -50,10 +50,10 @@ async function captures() {
   return (await database.pool.query('SELECT * FROM captured_emails ORDER BY booking_id')).rows;
 }
 const worker = (sink?: CaptureSink) => new EmailWorker(database, sink, now);
-async function admin(path: string) {
+async function admin(bookingId: string) {
   const { rows } = await database.pool.query("SELECT id FROM users WHERE role='admin'");
   const cookie = `lumni_session=${await createSessions(database, config, now).issue(rows[0].id)}`;
-  return request(app).get(`/api/admin/emails${path}`).set('Cookie', cookie).expect(200);
+  return request(app).get(`/api/admin/bookings/${bookingId}`).set('Cookie', cookie).expect(200);
 }
 function startChild(args: string[], env: NodeJS.ProcessEnv = {}, ipc = false) {
   return spawn(process.execPath, ['--import', 'tsx', ...args], {
@@ -100,14 +100,14 @@ describe('Worker de captura local con PostgreSQL real', () => {
     expect((await database.pool.query('SELECT count(*)::int n FROM email_outbox')).rows[0].n).toBe(
       1,
     );
-    const detail = await admin(`/${pending.id}`);
-    expect(detail.body.capture).toMatchObject({
+    const detail = await admin(booking.id);
+    expect(detail.body.email.capture).toMatchObject({
       bookingId: booking.id,
       textBody: pending.payload.textBody,
     });
   });
   it('cinco esperas duraderas de 1/2/4/8/16 minutos y sexto fallo visible en admin', async () => {
-    await confirmed();
+    const booking = await confirmed();
     for (let attempt = 1; attempt <= 6; attempt++) {
       const before = clock.getTime();
       expect(await worker(createCaptureSink('always')).processOne()).toMatchObject({
@@ -128,12 +128,9 @@ describe('Worker de captura local con PostgreSQL real', () => {
     }
     clock = new Date(clock.getTime() + 86400000);
     expect(await worker().processOne()).toEqual({ status: 'idle' });
-    const list = await admin('?status=failed');
-    expect(list.body.items).toHaveLength(1);
-    expect(list.body.items[0]).toMatchObject({ status: 'failed', attempts: 6 });
-    const detail = await admin(`/${(await event()).id}`);
-    expect(detail.body.event).toMatchObject({ status: 'failed', attempts: 6 });
-    expect(detail.body.capture).toBeNull();
+    const detail = await admin(booking.id);
+    expect(detail.body.email).toMatchObject({ status: 'failed', attempts: 6 });
+    expect(detail.body.email.capture).toBeNull();
   });
   it('reintentos sobreviven a reinicios y dos consumidores capturan una sola vez', async () => {
     await confirmed();

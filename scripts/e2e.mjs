@@ -92,8 +92,8 @@ INSERT INTO captured_emails (dedup_key,booking_id,to_email,subject,text_body)
 SELECT dedup_key,booking_id,payload->>'toEmail',payload->>'subject',payload->>'textBody' FROM email_outbox WHERE booking_id='${sentBooking}' ON CONFLICT (booking_id) DO NOTHING;
 UPDATE email_outbox SET status='sent', attempts=1, sent_at=now() WHERE booking_id='${sentBooking}';
 COMMIT;
-SELECT booking_id,id FROM email_outbox WHERE booking_id IN ('${failedBooking}','${sentBooking}');`;
-const rows = execFileSync(
+`;
+execFileSync(
   'docker',
   [
     'compose',
@@ -115,25 +115,14 @@ const rows = execFileSync(
   ],
   { cwd: root, encoding: 'utf8' },
 );
-const ids = new Map(
-  rows
-    .trim()
-    .split('\n')
-    .filter((row) => row.includes('|'))
-    .map((row) => row.split('|')),
-);
-const failedId = ids.get(failedBooking),
-  sentId = ids.get(sentBooking);
-if (!failedId || !sentId)
-  throw new Error('No se encontraron los eventos del fixture en el proyecto aislado.');
 await api('/auth/logout', {});
 if (process.argv.includes('--fixtures-only')) {
-  console.log(JSON.stringify({ failedId, sentId }));
+  console.log(JSON.stringify({ failedBooking, sentBooking }));
 } else {
   const result = spawnSync('pnpm', ['--filter', '@lumni/web', 'test:e2e'], {
     cwd: root,
     stdio: 'inherit',
-    env: { ...process.env, E2E_FAILED_EMAIL: failedId, E2E_SENT_EMAIL: sentId },
+    env: { ...process.env, E2E_FAILED_BOOKING: failedBooking, E2E_SENT_BOOKING: sentBooking },
   });
   process.exit(result.status ?? 1);
 }

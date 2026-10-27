@@ -18,9 +18,5 @@ export function createAdminRouter(service: AdminService): Router {
       booking: await service.changeStatus(uuidSchema.parse(req.params.id), 'complete', req.body),
     }),
   );
-  router.get('/emails', async (req, res) => res.json(await service.listEmails(req.query)));
-  router.get('/emails/:id', async (req, res) =>
-    res.json(await service.emailDetail(uuidSchema.parse(req.params.id))),
-  );
   return router;
 }

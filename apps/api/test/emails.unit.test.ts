@@ -55,13 +55,14 @@ describe('Correo: configuración, reintentos y ciclo', () => {
     expect(worker.processOne).toHaveBeenCalledTimes(1);
     expect(result).toHaveBeenCalledOnce();
   });
-  it('recupera el ciclo tras error sin exponer la excepción', async () => {
+  it('entrega la causa al manejador de error y permite detener el ciclo', async () => {
     const controller = new AbortController();
     const onError = vi.fn(() => controller.abort());
+    const error = new Error('dato privado');
     await consumeEmails(
       {
         processOne: async () => {
-          throw new Error('dato privado');
+          throw error;
         },
       },
       {
@@ -71,6 +72,6 @@ describe('Correo: configuración, reintentos y ciclo', () => {
         onError,
       },
     );
-    expect(onError).toHaveBeenCalledExactlyOnceWith();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error);
   });
 });

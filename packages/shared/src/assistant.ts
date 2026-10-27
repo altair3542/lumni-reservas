@@ -8,6 +8,7 @@ import {
   quoteSchema,
   versionSchema,
   instantSchema,
+  textSchema,
 } from './contracts.js';
 export const dateReferenceSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('absolute'), date: dateSchema }).strict(),
@@ -71,7 +72,7 @@ export const chatInputSchema = z.discriminatedUnion('kind', [
     .object({
       ...messageBase,
       kind: z.literal('message'),
-      content: z.string().trim().min(1).max(1000),
+      content: textSchema.trim().min(1).max(1000),
     })
     .strict(),
   z.object({ ...messageBase, kind: z.literal('accept_alternative') }).strict(),

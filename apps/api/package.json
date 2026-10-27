@@ -14,8 +14,7 @@
     "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed-cli.ts",
     "test": "vitest run --config vitest.unit.config.ts",
     "worker": "tsx --env-file-if-exists=../../.env src/worker.ts",
-    "worker:start": "node --env-file-if-exists=../../.env dist/worker.js",
-    "ai:check": "tsx --env-file-if-exists=../../.env src/assistant/check-cli.ts"
+    "worker:start": "node --env-file-if-exists=../../.env dist/worker.js"
   },
   "dependencies": {
     "@google/genai": "2.31.0",

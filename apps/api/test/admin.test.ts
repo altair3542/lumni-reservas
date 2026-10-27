@@ -5,8 +5,6 @@ import {
   adminBookingDetailSchema,
   adminBookingPageSchema,
   bookingResponseSchema,
-  emailDetailSchema,
-  emailQueuePageSchema,
   type Booking,
 } from '@lumni/shared';
 import { createApp } from '../src/app.js';
@@ -115,8 +113,7 @@ describe('Administración por HTTP con PostgreSQL real', () => {
     const id = randomUUID();
     for (const cookie of ['', clientCookie]) {
       const expected = cookie ? 403 : 401;
-      for (const path of ['/bookings', `/bookings/${id}`, '/emails', `/emails/${id}`])
-        await get(path, cookie).expect(expected);
+      for (const path of ['/bookings', `/bookings/${id}`]) await get(path, cookie).expect(expected);
       for (const action of ['cancel', 'complete'])
         await post(
           `/bookings/${id}/${action}`,
@@ -211,9 +208,6 @@ describe('Administración por HTTP con PostgreSQL real', () => {
   it('cancelar conserva motivo/importe/líneas/correo y libera disponibilidad; repetir es 409', async () => {
     const booking = await confirmed();
     const before = await details(booking.id);
-    const event = emailDetailSchema.parse(
-      (await get(`/emails/${before.email!.id}`).expect(200)).body,
-    );
     expect((await catalogQuote()).body.canBook).toBe(false);
     await database.pool.query('UPDATE rooms SET hourly_rate_cop=99000 WHERE id=$1', [DEMO_ROOM_ID]);
     const changed = decode(
@@ -232,9 +226,6 @@ describe('Administración por HTTP con PostgreSQL real', () => {
     const after = await details(booking.id);
     expect(after.lines).toEqual(before.lines);
     expect(after.email).toEqual(before.email);
-    expect(
-      emailDetailSchema.parse((await get(`/emails/${before.email!.id}`).expect(200)).body),
-    ).toEqual(event);
     expect((await catalogQuote()).body.canBook).toBe(true);
     await post(`/bookings/${booking.id}/cancel`, {
       expectedVersion: changed.version,
@@ -353,12 +344,11 @@ describe('Administración por HTTP con PostgreSQL real', () => {
       409,
     );
   });
-  it('listado de correo distingue pending, failed y sent con captura; detalle usa ID del evento', async () => {
+  it('detalle de reserva distingue correo pending, failed y sent y expone la captura', async () => {
     const pending = await confirmed();
     const failed = await confirmed({ startTime: '10:00' });
     const sent = await confirmed({ startTime: '11:00' });
-    const pendingId = await eventId(pending.id),
-      failedId = await eventId(failed.id),
+    const failedId = await eventId(failed.id),
       sentId = await eventId(sent.id);
     await database.pool.query(
       "UPDATE email_outbox SET status='failed',attempts=6,last_error='Fallo simulado de prueba' WHERE id=$1",
@@ -373,75 +363,28 @@ describe('Administración por HTTP con PostgreSQL real', () => {
       "INSERT INTO captured_emails (id,dedup_key,booking_id,to_email,subject,text_body,captured_at) SELECT $1,dedup_key,booking_id,payload->>'toEmail',payload->>'subject',payload->>'textBody',$3 FROM email_outbox WHERE id=$2",
       [captureId, sentId, now()],
     );
-    const list = emailQueuePageSchema.parse((await get('/emails').expect(200)).body);
-    expect(list.total).toBe(3);
-    expect(list.items.find((item) => item.id === pendingId)).toMatchObject({
+    expect((await details(pending.id)).email).toMatchObject({
       status: 'pending',
       attempts: 0,
-      capturedEmailId: null,
       lastError: null,
+      capture: null,
     });
-    const filtered = emailQueuePageSchema.parse(
-      (await get('/emails?status=failed').expect(200)).body,
-    );
-    expect(filtered.total).toBe(1);
-    expect(filtered.items[0]).toMatchObject({
-      id: failedId,
+    expect((await details(failed.id)).email).toMatchObject({
+      status: 'failed',
       attempts: 6,
       lastError: 'Fallo simulado de prueba',
+      capture: null,
     });
-    const failedDetail = emailDetailSchema.parse(
-      (await get(`/emails/${failedId}`).expect(200)).body,
-    );
-    expect(failedDetail.capture).toBeNull();
-    expect(failedDetail.payload.toEmail).toBe(customer.email);
-    const sentDetail = emailDetailSchema.parse((await get(`/emails/${sentId}`).expect(200)).body);
-    expect(sentDetail.event).toMatchObject({
-      status: 'sent',
-      capturedEmailId: captureId,
-      attempts: 1,
-    });
-    expect(sentDetail.capture).toMatchObject({
+    const result = (await details(sent.id)).email!;
+    expect(result).toMatchObject({ status: 'sent', attempts: 1, capturedEmailId: captureId });
+    expect(result.capture).toMatchObject({
       id: captureId,
       bookingId: sent.id,
       toEmail: customer.email,
+      subject: `Reserva confirmada ${sent.id}`,
+      capturedAt: now().toISOString(),
     });
-    expect((await details(failed.id)).email).toMatchObject({ status: 'failed', attempts: 6 });
-    await get(`/emails/${captureId}`).expect(404);
-    await get(`/emails/${sent.id}`).expect(404);
-  });
-  it('pagina correo por SQL con total filtrado y orden estable sin omisiones', async () => {
-    const ids = await fillBookings();
-    for (const id of ids)
-      await database.pool.query(
-        "INSERT INTO email_outbox (booking_id,dedup_key,payload,created_at) VALUES ($1,$2,$3,'2026-10-23T12:00:00-05:00')",
-        [
-          id,
-          `booking-confirmed:${id}`,
-          JSON.stringify({
-            toEmail: customer.email,
-            subject: 'Fixture',
-            textBody: 'Correo de prueba',
-          }),
-        ],
-      );
-    const first = emailQueuePageSchema.parse(
-      (await get('/emails?status=pending&pageSize=20').expect(200)).body,
-    );
-    const second = emailQueuePageSchema.parse(
-      (await get('/emails?status=pending&pageSize=20&page=2').expect(200)).body,
-    );
-    expect(first.total).toBe(27);
-    expect(second.total).toBe(27);
-    const combined = [...first.items, ...second.items];
-    expect(new Set(combined.map((row) => row.id)).size).toBe(27);
-    expect(combined.map((row) => row.id)).toEqual(
-      combined
-        .map((row) => row.id)
-        .sort()
-        .reverse(),
-    );
-    expect((await get('/emails?page=3').expect(200)).body).toMatchObject({ items: [], total: 27 });
+    expect(result.capture!.textBody).toContain('50000 COP');
   });
   it('UUID y consultas malformadas, importes/rol/estado y Origin inválido se rechazan sin mutar', async () => {
     const booking = await confirmed();
@@ -465,7 +408,7 @@ describe('Administración por HTTP con PostgreSQL real', () => {
       expectedVersion: booking.version,
       reason: 'No permitido',
     }).expect(400);
-    for (const path of ['/bookings', '/emails']) {
+    for (const path of ['/bookings']) {
       for (const query of [
         'page=0',
         'page=1.5',
@@ -478,9 +421,8 @@ describe('Administración por HTTP con PostgreSQL real', () => {
         await get(`${path}?${query}`).expect(400);
     }
     await get('/bookings?roomId=wrong').expect(400);
-    for (const path of ['/bookings/wrong', '/emails/wrong']) await get(path).expect(400);
+    await get('/bookings/wrong').expect(400);
     await get(`/bookings/${randomUUID()}`).expect(404);
-    await get(`/emails/${randomUUID()}`).expect(404);
     await post(`/bookings/${randomUUID()}/cancel`, { expectedVersion: 1, reason: 'Cambio' }).expect(
       404,
     );
@@ -501,7 +443,6 @@ describe('Administración por HTTP con PostgreSQL real', () => {
     await get('/bookings', clientCookie).expect(403);
     await database.pool.query("UPDATE users SET role='client' WHERE id=$1", [adminId]);
     await get('/bookings').expect(403);
-    await get('/emails').expect(403);
   });
   it('login renueva token, invalida el anterior y logout elimina la sesión renovada', async () => {
     const login = await request(app)

@@ -17,27 +17,22 @@ export function Layout() {
     staleTime: 30000,
   });
   const admin = user?.role === 'admin';
-  const pageName = location.pathname.startsWith('/admin/correos')
-    ? 'Correos de confirmación'
-    : location.pathname.startsWith('/admin')
-      ? 'Administración de reservas'
-      : location.pathname.startsWith('/reservas/')
-        ? 'Detalle de tu reserva'
-        : location.pathname === '/reservas'
-          ? 'Mis reservas'
-          : location.pathname.startsWith('/asistente')
-            ? 'Asistente de reservas'
-            : location.pathname === '/salir'
-              ? 'Cerrar sesión'
-              : 'Reservar espacio';
+  const pageName = location.pathname.startsWith('/admin')
+    ? 'Administración de reservas'
+    : location.pathname.startsWith('/reservas/')
+      ? 'Detalle de tu reserva'
+      : location.pathname === '/reservas'
+        ? 'Mis reservas'
+        : location.pathname.startsWith('/asistente')
+          ? 'Asistente de reservas'
+          : location.pathname === '/salir'
+            ? 'Cerrar sesión'
+            : 'Reservar espacio';
   useEffect(() => {
     document.title = `Lumni · ${pageName}`;
   }, [pageName]);
   const links = admin
-    ? [
-        { to: '/admin/reservas', label: 'Reservas', icon: '▤' },
-        { to: '/admin/correos', label: 'Correos', icon: '✉' },
-      ]
+    ? [{ to: '/admin/reservas', label: 'Reservas', icon: '▤' }]
     : [
         { to: '/salas', label: 'Reservar espacio', icon: '▦' },
         { to: '/reservas', label: 'Mis reservas', icon: '▤' },

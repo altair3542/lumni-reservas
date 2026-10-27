@@ -26,7 +26,6 @@
     "test:e2e": "node scripts/e2e.mjs",
     "worker": "pnpm --filter @lumni/shared build && pnpm --filter @lumni/api worker",
     "worker:start": "pnpm --filter @lumni/api worker:start",
-    "ai:check": "pnpm --filter @lumni/api ai:check",
     "test:sql": "node sql/check.ts"
   },
   "devDependencies": {

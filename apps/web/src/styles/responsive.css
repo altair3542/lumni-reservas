@@ -14,7 +14,8 @@
   .workspace-body {
     margin-left: 195px;
   }
-  .brand-caption {
+  .brand-caption,
+  .heading-note {
     display: none;
   }
   .page-content {
@@ -46,9 +47,6 @@
   .room-description {
     min-height: 35px;
   }
-  .heading-note {
-    display: none;
-  }
 }
 @media (max-width: 760px) {
   .workspace {
@@ -73,7 +71,9 @@
     font-size: 25px;
   }
   .nav-caption,
-  .sidebar-note {
+  .sidebar-note,
+  .user-menu > div:not(.avatar),
+  .login-art {
     display: none;
   }
   .sidebar nav {
@@ -96,9 +96,6 @@
     grid-column: 2;
     grid-row: 1;
   }
-  .user-menu > div:not(.avatar) {
-    display: none;
-  }
   .workspace-body {
     margin-left: 0;
   }
@@ -107,7 +104,8 @@
     padding: 0 20px;
     font-size: 10px;
   }
-  .service-status {
+  .service-status,
+  .capacity {
     font-size: 9px;
   }
   .page-content {
@@ -126,7 +124,6 @@
   }
   .room-cards {
     grid-template-columns: 1fr;
-    gap: 12px;
   }
   .room-card {
     display: grid;
@@ -154,9 +151,6 @@
   }
   .room-rate {
     font-size: 16px;
-  }
-  .capacity {
-    font-size: 9px;
   }
   .two-column {
     grid-template-columns: 1fr;
@@ -193,10 +187,10 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 7px;
-    font-size: 10px;
     line-height: 1.4;
   }
-  .form-grid {
+  .form-grid,
+  .booking-grid {
     grid-template-columns: 1fr;
   }
   .full {
@@ -204,9 +198,6 @@
   }
   .section-bar {
     align-items: flex-start;
-  }
-  .booking-grid {
-    grid-template-columns: 1fr;
   }
   .booking-card h2 {
     margin-top: 18px;
@@ -247,9 +238,6 @@
   }
   .login-intro p {
     font-size: 12px;
-  }
-  .login-art {
-    display: none;
   }
   .login-intro .location {
     display: inline-block;

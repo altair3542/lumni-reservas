@@ -1,20 +1,15 @@
 import { and, count, desc, eq } from 'drizzle-orm';
-import { z } from 'zod';
 import {
   adminBookingDetailSchema,
   adminBookingPageSchema,
   adminBookingQuerySchema,
   cancelSchema,
   confirmSchema,
-  emailDetailSchema,
   emailQueueItemSchema,
-  emailQueuePageSchema,
-  emailQueueQuerySchema,
+  textSchema,
   type AdminBookingDetail,
   type AdminBookingPage,
   type Booking,
-  type EmailDetail,
-  type EmailQueuePage,
 } from '@lumni/shared';
 import type { Database } from '../db/client.js';
 import { bookings, bookingLines, capturedEmails, emailOutbox } from '../db/schema.js';
@@ -53,7 +48,7 @@ function offsetFor(page: number, pageSize: number) {
 // ausente/blanco (422 de negocio) de un tipo o campo desconocido (400 de esquema).
 const cancelInputSchema = cancelSchema
   .omit({ reason: true })
-  .extend({ reason: z.string().optional() })
+  .extend({ reason: textSchema.optional() })
   .strict();
 
 export class AdminService {
@@ -102,14 +97,29 @@ export class AdminService {
           .where(eq(bookingLines.bookingId, id))
           .orderBy(bookingLines.concept);
         const [email] = await tx
-          .select(queueColumns)
+          .select({ event: queueColumns, capture: capturedEmails })
           .from(emailOutbox)
           .leftJoin(capturedEmails, eq(capturedEmails.bookingId, emailOutbox.bookingId))
           .where(eq(emailOutbox.bookingId, id));
         return adminBookingDetailSchema.parse({
           booking: serializeBooking(row),
           lines,
-          email: email ? serializeQueueItem(email) : null,
+          email: email
+            ? {
+                ...serializeQueueItem(email.event),
+                capture: email.capture
+                  ? {
+                      id: email.capture.id,
+                      bookingId: email.capture.bookingId,
+                      toEmail: email.capture.toEmail,
+                      subject: email.capture.subject,
+                      textBody: email.capture.textBody,
+                      htmlBody: email.capture.htmlBody,
+                      capturedAt: email.capture.capturedAt.toISOString(),
+                    }
+                  : null,
+              }
+            : null,
         });
       },
       { isolationLevel: 'repeatable read', accessMode: 'read only' },
@@ -147,56 +157,6 @@ export class AdminService {
         .returning();
       if (!updated) throw new Error('Reserva bloqueada desapareció');
       return serializeBooking(updated);
-    });
-  }
-
-  async listEmails(value: unknown): Promise<EmailQueuePage> {
-    const query = emailQueueQuerySchema.parse(value);
-    const offset = offsetFor(query.page, query.pageSize);
-    const filter = query.status ? eq(emailOutbox.status, query.status) : undefined;
-    return this.database.db.transaction(
-      async (tx) => {
-        const [total] = await tx.select({ value: count() }).from(emailOutbox).where(filter);
-        const rows = await tx
-          .select(queueColumns)
-          .from(emailOutbox)
-          .leftJoin(capturedEmails, eq(capturedEmails.bookingId, emailOutbox.bookingId))
-          .where(filter)
-          .orderBy(desc(emailOutbox.createdAt), desc(emailOutbox.id))
-          .limit(query.pageSize)
-          .offset(offset);
-        return emailQueuePageSchema.parse({
-          items: rows.map(serializeQueueItem),
-          total: total?.value ?? 0,
-          page: query.page,
-          pageSize: query.pageSize,
-        });
-      },
-      { isolationLevel: 'repeatable read', accessMode: 'read only' },
-    );
-  }
-
-  async emailDetail(id: string): Promise<EmailDetail> {
-    const [row] = await this.database.db
-      .select({ queue: queueColumns, payload: emailOutbox.payload, capture: capturedEmails })
-      .from(emailOutbox)
-      .leftJoin(capturedEmails, eq(capturedEmails.bookingId, emailOutbox.bookingId))
-      .where(eq(emailOutbox.id, id));
-    if (!row) throw new HttpError(404, 'EMAIL_NOT_FOUND', 'Evento de correo no encontrado');
-    return emailDetailSchema.parse({
-      event: serializeQueueItem(row.queue),
-      payload: row.payload,
-      capture: row.capture
-        ? {
-            id: row.capture.id,
-            bookingId: row.capture.bookingId,
-            toEmail: row.capture.toEmail,
-            subject: row.capture.subject,
-            textBody: row.capture.textBody,
-            htmlBody: row.capture.htmlBody,
-            capturedAt: row.capture.capturedAt.toISOString(),
-          }
-        : null,
     });
   }
 }

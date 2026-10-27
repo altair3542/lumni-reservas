@@ -47,7 +47,8 @@
   box-shadow: 0 4px 15px #173e3208;
   pointer-events: none;
 }
-.assistant-launcher.is-open .assistant-launcher-hint {
+.assistant-launcher.is-open .assistant-launcher-hint,
+.assistant-drawer[hidden] {
   display: none;
 }
 .assistant-drawer {
@@ -68,9 +69,6 @@
     0 4px 18px #173e3212;
   overflow: hidden;
   animation: assistant-arrive 180ms ease-out;
-}
-.assistant-drawer[hidden] {
-  display: none;
 }
 .assistant-header {
   display: flex;
@@ -288,7 +286,8 @@
   font-size: 17px;
   margin: 8px 0;
 }
-.chat-quote > p {
+.chat-quote > p,
+.assistant-history li span {
   font-size: 11px;
 }
 .chat-quote .breakdown {
@@ -395,10 +394,6 @@
   outline: none;
   box-shadow: none;
 }
-.assistant-input textarea:focus {
-  outline: none;
-  box-shadow: none;
-}
 .assistant-input textarea::placeholder {
   color: #91a08e;
 }
@@ -462,9 +457,6 @@
   height: 19px;
   flex-shrink: 0;
   color: #9bad8e;
-}
-.assistant-history li span {
-  font-size: 11px;
 }
 .assistant-history li small {
   display: block;

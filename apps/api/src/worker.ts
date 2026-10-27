@@ -6,6 +6,7 @@ import { readWorkerConfig } from './emails/config.js';
 import { createCaptureSink } from './emails/sink.js';
 import { EmailWorker } from './emails/service.js';
 import { consumeEmails } from './emails/loop.js';
+import { errorDetails } from './http/error-details.js';
 
 async function main() {
   const config = readWorkerConfig();
@@ -23,7 +24,7 @@ async function main() {
       pollIntervalMs: config.pollIntervalMs,
       onResult: (result) =>
         console.log('EMAIL_WORKER', result.status, result.eventId, result.attempts),
-      onError: () => console.error('EMAIL_WORKER_ERROR: revisa la conexión con PostgreSQL.'),
+      onError: (error) => console.error('EMAIL_WORKER_ERROR', errorDetails(error)),
       onCycle: async () => {
         await writeFile(marker, String(Date.now()));
         if (!started) {
@@ -39,7 +40,10 @@ async function main() {
     await unlink(marker).catch(() => undefined);
   }
 }
-void main().catch(() => {
-  console.error('No se pudo iniciar el worker de correo. Revisa DATABASE_URL y EMAIL_*.');
+void main().catch((error: unknown) => {
+  console.error(
+    'No se pudo iniciar el worker de correo. Revisa DATABASE_URL y EMAIL_*.',
+    errorDetails(error),
+  );
   process.exitCode = 1;
 });

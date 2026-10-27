@@ -129,17 +129,11 @@ test('cliente cotiza sábado, guarda, confirma y admin consulta/cancela sin camb
   await logout(page);
   await login(page, 'admin');
   await page.goto(`/#/admin/reservas/${id}`);
-  await expect
-    .poll(
-      async () => (await (await page.request.get(`/api/admin/bookings/${id}`)).json()).email.status,
-    )
-    .toBe('sent');
-  await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Capturado', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Capturado', exact: true })).toBeVisible({
+    timeout: 10000,
+  });
   await expect(page.getByRole('button', { name: 'Marcar como completada' })).toBeDisabled();
-  await page.getByRole('link', { name: 'Ver contenido y estado' }).click();
   await expect(page.locator('.email-body')).toContainText('200000 COP');
-  await page.getByRole('link', { name: 'Ver reserva', exact: false }).click();
   await page.getByLabel('Motivo de cancelación').fill('Cambio acordado en la prueba');
   await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
   await expect(
@@ -363,14 +357,17 @@ test('diseño móvil mantiene formularios y navegación dentro de la pantalla', 
 
 test('admin inspecciona errores y capturas reales del fixture aislado', async ({ page }) => {
   test.skip(
-    !process.env.E2E_FAILED_EMAIL || !process.env.E2E_SENT_EMAIL,
+    !process.env.E2E_FAILED_BOOKING || !process.env.E2E_SENT_BOOKING,
     'Configura los IDs de fixtures de correo de la demo aislada.',
   );
   await login(page, 'admin');
-  await page.goto(`/#/admin/correos/${process.env.E2E_FAILED_EMAIL}`);
+  await page.goto(`/#/admin/reservas/${process.env.E2E_FAILED_BOOKING}`);
   await expect(page.getByRole('heading', { name: 'Fallido', exact: true })).toBeVisible();
   await expect(page.getByText('Fallo controlado de captura E2E')).toBeVisible();
-  await page.goto(`/#/admin/correos/${process.env.E2E_SENT_EMAIL}`);
-  await expect(page.getByRole('heading', { name: 'Confirmación capturada' })).toBeVisible();
+  await page.goto(`/#/admin/reservas/${process.env.E2E_SENT_BOOKING}`);
+  await expect(
+    page.getByRole('heading', { name: 'Confirmación capturada', exact: true }),
+  ).toBeVisible();
   await expect(page.locator('.email-body')).toContainText('COP');
+  await expect(page.getByRole('link', { name: 'Correos', exact: true })).toHaveCount(0);
 });

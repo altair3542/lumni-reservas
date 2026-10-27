@@ -114,6 +114,10 @@ Las rutas hash, como `/#/salas`, `/#/reservas` y `/#/reservas/<id>`, permiten re
 
 React 18/Vite y Express 5 separan interfaz y servicios; TanStack Query gestiona datos del servidor y React Hook Form/Zod validan formularios. Drizzle aplica migraciones, y SQL explícito define la exclusión GiST. Luxon maneja la zona; no hay Redis ni framework de jobs adicional. Auth simple: sesión opaca en cookie HttpOnly/SameSite=Lax, token hasheado en BD, contraseñas con scrypt. Mutaciones validan Origin; en desarrollo se admiten localhost/127.0.0.1 solo con el puerto configurado. IDs ajenos responden 404 y rutas administrativas requieren rol.
 
+Login admite hasta 30 solicitudes por IP y minuto, por proceso. El límite se aplica antes de consultar usuarios o calcular `scrypt`. Al superar el límite devuelve 429 con `Retry-After`, sin bloqueo permanente de cuentas ni confianza en `X-Forwarded-For`.
+
+Los textos de contacto, motivo y chat rechazan NUL y secuencias Unicode inválidas antes de persistir; conservan emojis y saltos de línea válidos. Los errores inesperados registran requestId, tipo y código técnico reconocido cuando está disponible; no incluyen mensajes crudos, SQL, parámetros o cuerpos.
+
 ## Concurrencia e idempotencia
 
 **Reservas distintas, misma sala/horario:** [0001_booking_exclusion.sql](apps/api/drizzle/0001_booking_exclusion.sql) crea `bookings_no_overlap`, exclusión GiST parcial para confirmed/completed con `tstzrange(..., '[)')`. Ambas cotizaciones pueden decir disponible; al confirmar, PostgreSQL permite un ganador y rechaza el otro. El perdedor conserva el draft y recibe 409/alternativa. Salir a las 10:00 y entrar a las 10:00 es válido.
@@ -189,7 +193,7 @@ docker compose run --rm app pnpm verify
 pnpm test:sql
 ```
 
-`verify` comprueba formato, lint, tipos, pruebas y build. Las 233 pruebas se distribuyen en 118 sin base de datos (`pnpm test`) y 115 de integración PostgreSQL (`pnpm test:integration`). Integración reinicia únicamente una base llamada `lumni_test` o `lumni_test_<sufijo>`; no uses esa base para datos que quieras conservar.
+`verify` comprueba formato, lint, tipos, pruebas y build. Las 246 pruebas se distribuyen en 126 sin base de datos (`pnpm test`) y 120 de integración PostgreSQL (`pnpm test:integration`). Integración reinicia únicamente una base llamada `lumni_test` o `lumni_test_<sufijo>`; no uses esa base para datos que quieras conservar.
 
 | Área                | Cobertura                                                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -198,6 +202,7 @@ pnpm test:sql
 | Correo              | [Dos workers, reintentos y recuperación de procesos interrumpidos](apps/api/test/emails.test.ts).                                                                                                 |
 | Datos demo          | [Repetición, edición, concurrencia y rollback del seed](apps/api/test/seed-demo.test.ts).                                                                                                         |
 | Asistente           | [Autorización, persistencia e idempotencia](apps/api/test/assistant.test.ts) y [validación de salidas/fechas](apps/api/test/assistant.unit.test.ts). El proveedor está simulado en estas pruebas. |
+| Validación y login  | [Texto Unicode](packages/shared/src/text.test.ts), [límites y logs](apps/api/test/security.unit.test.ts) y [regresiones HTTP/PostgreSQL](apps/api/test/security.test.ts).                         |
 | SQL                 | [Seis escenarios y 48 comprobaciones](sql/README.md) sobre el DDL del enunciado y fixtures sintéticos.                                                                                            |
 
 Se ejecutó `verify` con Node 22.18.0, 24.22.1 y 26.10.0, y en Docker con PostgreSQL 16. La integración de Gemini se comprobó además con la API real: cotización, creación de borrador, recarga y reintento sin confirmar ni generar correos. Esa comprobación no forma parte de las suites sin clave.

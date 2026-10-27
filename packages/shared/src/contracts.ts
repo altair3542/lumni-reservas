@@ -14,6 +14,12 @@ export const serviceCodesSchema = z
   .refine((v) => new Set(v).size === v.length, 'No repitas servicios');
 export const moneySchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 export const versionSchema = z.number().int().positive();
+export const textSchema = z
+  .string()
+  .refine(
+    (value) => !value.includes('\0') && !/[\uD800-\uDFFF]/u.test(value),
+    'El texto contiene caracteres inválidos',
+  );
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email().max(254));
 export const dateSchema = z
   .string()
@@ -31,9 +37,9 @@ export const userSchema = z
 export const loginResponseSchema = z.object({ user: userSchema }).strict();
 export const customerSchema = z
   .object({
-    fullName: z.string().trim().min(1).max(160),
+    fullName: textSchema.trim().min(1).max(160),
     email: emailSchema,
-    company: z.string().trim().max(160).optional(),
+    company: textSchema.trim().max(160).optional(),
   })
   .strict();
 export const roomSchema = z
@@ -129,7 +135,7 @@ export const draftStepSchema = z.discriminatedUnion('step', [
 ]);
 export const confirmSchema = z.object({ expectedVersion: versionSchema }).strict();
 export const cancelSchema = confirmSchema
-  .extend({ reason: z.string().trim().min(1).max(1000) })
+  .extend({ reason: textSchema.trim().min(1).max(1000) })
   .strict();
 const positiveQuery = z
   .string()
@@ -221,17 +227,6 @@ export const adminBookingPageSchema = z
     pageSize: z.number().int().min(1).max(100),
   })
   .strict();
-export const emailQueueQuerySchema = paginationSchema
-  .extend({ status: emailStatusSchema.optional() })
-  .strict();
-export const emailQueuePageSchema = z
-  .object({
-    items: z.array(emailQueueItemSchema),
-    total: z.number().int().nonnegative(),
-    page: z.number().int().positive(),
-    pageSize: z.number().int().min(1).max(100),
-  })
-  .strict();
 export type Booking = z.infer<typeof bookingSchema>;
 
 export const bookingListQuerySchema = z.object({ status: bookingStatusSchema.optional() }).strict();
@@ -241,13 +236,6 @@ export const bookingLineSchema = z
   .object({
     concept: z.string().min(1),
     amountCop: z.number().int().min(-Number.MAX_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER),
-  })
-  .strict();
-export const adminBookingDetailSchema = z
-  .object({
-    booking: bookingSchema,
-    lines: z.array(bookingLineSchema),
-    email: emailQueueItemSchema.nullable(),
   })
   .strict();
 export const capturedEmailSchema = z
@@ -261,15 +249,13 @@ export const capturedEmailSchema = z
     capturedAt: instantSchema,
   })
   .strict();
-export const emailDetailSchema = z
+export const adminBookingDetailSchema = z
   .object({
-    event: emailQueueItemSchema,
-    payload: emailPayloadSchema,
-    capture: capturedEmailSchema.nullable(),
+    booking: bookingSchema,
+    lines: z.array(bookingLineSchema),
+    email: emailQueueItemSchema.extend({ capture: capturedEmailSchema.nullable() }).nullable(),
   })
   .strict();
 export type AdminBookingPage = z.infer<typeof adminBookingPageSchema>;
 export type AdminBookingDetail = z.infer<typeof adminBookingDetailSchema>;
 export type EmailQueueItem = z.infer<typeof emailQueueItemSchema>;
-export type EmailQueuePage = z.infer<typeof emailQueuePageSchema>;
-export type EmailDetail = z.infer<typeof emailDetailSchema>;

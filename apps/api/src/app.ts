@@ -12,6 +12,8 @@ import {
   requireRole,
 } from './auth/session.js';
 import { verifyPassword } from './auth/password.js';
+import { createLoginLimiter } from './auth/login-limit.js';
+import { errorDetails, type ErrorDetails } from './http/error-details.js';
 import type { Config } from './config.js';
 import type { Database } from './db/client.js';
 import { rooms, services, sessions, users } from './db/schema.js';
@@ -31,14 +33,14 @@ export type AppOptions = {
   config: Config;
   now?: () => Date;
   llm?: LlmClient;
-  logError?: (requestId: string) => void;
+  logError?: (requestId: string, details: ErrorDetails) => void;
 };
 export function createApp({
   database,
   config,
   now = () => new Date(),
   llm = createLlmClient(),
-  logError = (id) => console.error('API_ERROR', id),
+  logError = (requestId, details) => console.error('API_ERROR', { requestId, ...details }),
 }: AppOptions): Express {
   const app = express();
   const auth = createSessions(database, config, now);
@@ -59,15 +61,16 @@ export function createApp({
   });
   app.use(express.json({ limit: '16kb' }));
   app.use(cookieParser());
-  app.get('/api/health', async (_req, res) => {
+  app.get('/api/health', async (req, res) => {
     try {
       await database.db.execute(sql`SELECT 1`);
-    } catch {
+    } catch (error) {
+      logError(req.requestId, errorDetails(error));
       throw new HttpError(503, 'DATABASE_UNAVAILABLE', 'Base de datos no disponible');
     }
     res.json({ status: 'ok', database: 'up' });
   });
-  app.post('/api/auth/login', async (req, res) => {
+  app.post('/api/auth/login', createLoginLimiter(now), async (req, res) => {
     const input = loginSchema.parse(req.body);
     const [row] = await database.db
       .select()
@@ -164,7 +167,7 @@ export function createApp({
       });
       return;
     }
-    logError(req.requestId);
+    logError(req.requestId, errorDetails(err));
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
