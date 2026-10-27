@@ -92,7 +92,7 @@ Recorrido breve:
 1. **Cliente:** abre Reservar espacio. Elige un sábado futuro libre, sala pequeña, 09:00, cuatro horas, proyector y café: **160.000 − 16.000 + 36.000 + 30.000 = 210.000 COP**. Si hay ocupación, revisa el motivo y la alternativa real.
 2. Continúa con la reserva, guarda contacto, sala/horario y extras. Recarga o entra desde otro navegador para retomar lo guardado. Revisa el precio y confirma mediante el diálogo. La cotización no bloquea cupo.
 3. En **Mis reservas**, consulta estados y retoma borradores. Los cambios sin guardar siguen en memoria; los guardados viven en el servidor. Una versión obsoleta pide cargar la versión vigente antes de sobrescribir.
-4. **Administrador:** filtra por sala/estado, pagina y abre el detalle; cancela con motivo o completa una reserva cuyo fin ya pasó. En **Correos** revisa intentos, errores y contenido capturado. `sent` se presenta como **Capturado**, no como entrega a un buzón externo.
+4. **Administrador:** filtra por sala/estado, pagina y abre el detalle; cancela con motivo o completa una reserva cuyo fin ya pasó. En el detalle de cada reserva revisa el estado del correo, intentos, errores y contenido capturado. `sent` se presenta como **Capturado**, no como entrega a un buzón externo.
 5. **Cliente con Gemini configurado:** abre la burbuja inferior derecha, pide una sala para seis personas un sábado futuro por la mañana con proyector; aclara fecha, hora y duración cuando se solicite. Revisa la cotización y el borrador desde el enlace; la confirmación ocurre en el formulario.
 
 Las rutas hash, como `/#/salas`, `/#/reservas` y `/#/reservas/<id>`, permiten recargar enlaces. Los horarios se muestran en America/Bogota aunque el navegador esté en otra zona. Cliente y administrador tienen navegación separada; la autorización sigue en el backend. Al cambiar de cuenta se limpia la caché privada.
@@ -128,7 +128,7 @@ Las pruebas [bookings.test.ts](apps/api/test/bookings.test.ts) ejecutan carreras
 
 Confirmar solo inserta el evento. El proceso [worker](apps/api/src/worker.ts) consume con `FOR UPDATE SKIP LOCKED`; un savepoint permite guardar el fallo/reintento incluso si una escritura SQL aborta el intento. Hay un intento inicial y hasta cinco reintentos con espera de **1, 2, 4, 8 y 16 minutos**; el sexto fallo deja failed visible en administración.
 
-La captura en `captured_emails` y el cambio de outbox a sent se confirman en la misma transacción, con claves únicas por reserva/deduplicación. Se garantiza **una captura local durable**, también al reintentar o reiniciar; no una entrega SMTP externa exactamente una vez. En Correos, los pendientes se actualizan cada dos segundos. [emails.test.ts](apps/api/test/emails.test.ts) cubre dos workers, fallos SQL y procesos interrumpidos antes/después del commit.
+La captura en `captured_emails` y el cambio de outbox a sent se confirman en la misma transacción, con claves únicas por reserva/deduplicación. Se garantiza **una captura local durable**, también al reintentar o reiniciar; no una entrega SMTP externa exactamente una vez. En el detalle administrativo, los correos pendientes se actualizan cada dos segundos. [emails.test.ts](apps/api/test/emails.test.ts) cubre dos workers, fallos SQL y procesos interrumpidos antes/después del commit.
 
 Para ver pending en Docker, detén `docker compose stop worker`, confirma una reserva y reinicia con `docker compose up -d --wait worker`. En nativo basta detener/reiniciar la terminal de `pnpm worker`.
 
@@ -138,13 +138,7 @@ Para demostrar fallos en una demo aislada, agrega `EMAIL_FAILURE_MODE=first-two`
 
 Configura una clave de Gemini en `AI_API_KEY` y un modelo habilitado para ese proyecto en `AI_MODEL`, sin pegar la clave en código o frontend. `.env.example` propone `gemini-3.5-flash-lite`, verificado por API durante el desarrollo. Reinicia `pnpm dev` o recrea la app de Docker para cargar cambios de entorno.
 
-```sh
-pnpm ai:check
-# Alternativa con la demo Docker iniciada:
-docker compose run --rm app pnpm ai:check
-```
-
-Este diagnóstico hace una petición auténtica, no muestra la clave y distingue configuración, HTTP 429/503 y timeout. Depende del acceso/cuota del proyecto; no se supone que Playground, una suscripción de chat o la existencia del modelo en un catálogo garantizan generación por API. Los planes/cuotas vigentes se consultan en la [documentación de Google](https://ai.google.dev/gemini-api/docs/pricing).
+Si el proveedor rechaza la petición o agota el tiempo de espera, el panel muestra un error recuperable. Revisa clave, modelo habilitado y cuota del proyecto; después reinicia la app si cambiaste el entorno. Los límites vigentes se consultan en la [documentación de Google](https://ai.google.dev/gemini-api/docs/pricing).
 
 El panel aparece solo para cliente. Minimizar conserva texto y solicitud en curso; Conversaciones retoma historial, Nueva prepara otra y Revisar borrador abre el wizard. En móvil ocupa la pantalla y contiene el foco; Escape cierra, Enter envía y Shift+Enter agrega línea. Los enlaces antiguos `/#/asistente/<id>` abren el panel en Salas.
 
@@ -174,7 +168,6 @@ API bajo `/api`, autenticación en `/auth/login`, `/auth/logout` y `/me`. Catál
 | `PATCH /bookings/:id/draft`, `POST /bookings/:id/confirm`                            | Guardar step 1/2/3 con expectedVersion o confirmar.                                 |
 | `GET /admin/bookings`, `GET /admin/bookings/:id`                                     | Paginación/filtros status/roomId y detalle.                                         |
 | `POST /admin/bookings/:id/cancel`, `POST /admin/bookings/:id/complete`               | Motivo obligatorio al cancelar; fin alcanzado al completar.                         |
-| `GET /admin/emails`, `GET /admin/emails/:id`                                         | Filtros de estado, intentos, captura y contenido.                                   |
 | `POST /chat/conversations`, `GET /chat/conversations`, `GET /chat/conversations/:id` | Conversaciones propias; lista de últimas 20.                                        |
 | `POST /chat/conversations/:id/messages`                                              | kind=message con content, o accept_alternative; clientMessageId y expectedVersion.  |
 
@@ -196,7 +189,7 @@ docker compose run --rm app pnpm verify
 pnpm test:sql
 ```
 
-`verify` comprueba formato, lint, tipos, pruebas y build. Las 234 pruebas se distribuyen en 118 sin base de datos (`pnpm test`) y 116 de integración PostgreSQL (`pnpm test:integration`). Integración reinicia únicamente una base llamada `lumni_test` o `lumni_test_<sufijo>`; no uses esa base para datos que quieras conservar.
+`verify` comprueba formato, lint, tipos, pruebas y build. Las 233 pruebas se distribuyen en 118 sin base de datos (`pnpm test`) y 115 de integración PostgreSQL (`pnpm test:integration`). Integración reinicia únicamente una base llamada `lumni_test` o `lumni_test_<sufijo>`; no uses esa base para datos que quieras conservar.
 
 | Área                | Cobertura                                                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -236,7 +229,9 @@ En Linux instala también las bibliotecas del navegador con `pnpm --filter @lumn
 
 Se utilizó **Codex** como asistente de desarrollo para TypeScript, SQL, pruebas, configuración y documentación. El trabajo incluyó el cotizador, las transacciones de reservas, administración, interfaz, worker de correo, integración del chat y consultas SQL. La IA del producto es **Gemini**, mediante `@google/genai`, y se limita a extraer la solicitud según el esquema descrito arriba.
 
-Un ejemplo de propuesta corregida fue restringir inicialmente `engines.node` a Node 22: impedía instalar el proyecto con Node 26. Se amplió el soporte a 22.18+, 24 y 26 después de ejecutar las comprobaciones correspondientes, manteniendo pnpm fijado y la alternativa Docker. La configuración está en [package.json](package.json).
+Un ejemplo de propuesta descartada fue la primera interfaz del chat: Codex lo implementó como una página propia, con una barra lateral opcional. La descarté porque obligaba al cliente a salir del cotizador o del wizard para conversar, cuando el asistente debe acompañarlo hasta dejar el borrador listo y la confirmación ocurre en la pantalla de la reserva. Se rehízo como burbuja con panel lateral ([AssistantDock.tsx](apps/web/src/assistant/AssistantDock.tsx)), montada en el layout autenticado, sin cambiar el flujo de datos ni la persistencia de la conversación en el servidor. Las pruebas de navegador del panel ([chat.spec.ts](apps/web/e2e/chat.spec.ts)), con la API del chat simulada, comprueban que la conversación se conserva al minimizar y al recargar, que los enlaces abren el panel desde otras pantallas y que en móvil el foco queda contenido.
+
+Otra corrección fue que Codex restringió `engines.node` a Node 22, lo que impedía instalar con Node 26; se amplió a 22.18+, 24 y 26 después de verificar cada versión ([package.json](package.json)).
 
 La revisión manual incluyó los flujos cliente/administrador, el reintento de confirmación con el mismo ID, precio y fecha, y la captura de correo sin duplicación tras reiniciar el worker. Codex ejecutó las suites automatizadas, las pruebas de navegador, el recorrido real de Gemini y la comprobación de extensión del informe. Se distinguen las pruebas con proveedor simulado de las llamadas reales.
 
@@ -258,5 +253,5 @@ Las instrucciones técnicas utilizadas por el asistente están en [AGENTS.md](AG
 | Puerto ocupado                                     | Ajusta APP_PORT/POSTGRES_PORT; en nativo también URLs/proxy. Detén solo el proceso propio que corresponda.                                        |
 | Credencial PostgreSQL no coincide tras editar .env | El volumen conserva la inicial; editar la variable no rota usuarios existentes.                                                                   |
 | App/worker unhealthy                               | docker compose logs app worker postgres; no se considera listo hasta que los tres estén saludables.                                               |
-| Chat 503/timeout                                   | pnpm ai:check; revisa clave/modelo/acceso sin compartir la clave. Playground OK no prueba acceso de API.                                          |
+| Chat 503/timeout                                   | Revisa el error del panel, clave/modelo/acceso y cuota de Gemini; no compartas la clave.                                                          |
 | Correo pending                                     | Comprueba pnpm worker o servicio Docker y el backoff persistido. failed no se reintenta automáticamente.                                          |
