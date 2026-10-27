@@ -27,7 +27,7 @@ const config = readConfig({
 });
 const app = createApp({ database, config, now, logError: () => {} });
 const service = new BookingService(database, now);
-const customer = { fullName: 'Contacto A3', email: 'contacto-a3@example.com' };
+const customer = { fullName: 'Contacto de prueba', email: 'contacto@example.com' };
 const schedule = {
   roomId: DEMO_ROOM_ID,
   date: '2026-10-26',
@@ -100,7 +100,7 @@ beforeEach(async () => {
   clock = new Date('2026-10-23T17:00:00Z');
   await resetDatabase(database);
   await database.pool.query(
-    "INSERT INTO users (id,email,password_hash,role,full_name) VALUES ($1,'cliente-a3@example.com','test','client','Otro cliente A3')",
+    "INSERT INTO users (id,email,password_hash,role,full_name) VALUES ($1,'otro-cliente@example.com','test','client','Otro cliente de prueba')",
     [otherOwner],
   );
   adminId = (await database.pool.query("SELECT id FROM users WHERE role='admin'")).rows[0].id;
@@ -418,7 +418,11 @@ describe('Administración por HTTP con PostgreSQL real', () => {
         [
           id,
           `booking-confirmed:${id}`,
-          JSON.stringify({ toEmail: customer.email, subject: 'Fixture', textBody: 'Fixture A3' }),
+          JSON.stringify({
+            toEmail: customer.email,
+            subject: 'Fixture',
+            textBody: 'Correo de prueba',
+          }),
         ],
       );
     const first = emailQueuePageSchema.parse(

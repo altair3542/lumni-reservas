@@ -6,14 +6,16 @@ const databaseUrl = 'postgres://lumni:local-test@localhost/lumni_test';
 
 describe('Permisos, hashes y cookies', () => {
   it('hashes con sal aleatoria verifican solo la contraseña correcta y formato scrypt esperado', async () => {
-    const first = await hashPassword('PruebaA3!'),
-      second = await hashPassword('PruebaA3!');
+    const first = await hashPassword('ClaveDePrueba!'),
+      second = await hashPassword('ClaveDePrueba!');
     expect(first).not.toBe(second);
-    expect(await verifyPassword('PruebaA3!', first)).toBe(true);
+    expect(await verifyPassword('ClaveDePrueba!', first)).toBe(true);
     expect(await verifyPassword('incorrecta', first)).toBe(false);
-    expect(await verifyPassword('PruebaA3!', first.replace('scrypt:', 'unknown:'))).toBe(false);
-    expect(await verifyPassword('PruebaA3!', first + ':extra')).toBe(false);
-    expect(await verifyPassword('PruebaA3!')).toBe(false);
+    expect(await verifyPassword('ClaveDePrueba!', first.replace('scrypt:', 'unknown:'))).toBe(
+      false,
+    );
+    expect(await verifyPassword('ClaveDePrueba!', first + ':extra')).toBe(false);
+    expect(await verifyPassword('ClaveDePrueba!')).toBe(false);
   });
   it('requireOwner trata reserva ajena e inexistente como el mismo 404', () => {
     const row = { ownerId: 'owner' };

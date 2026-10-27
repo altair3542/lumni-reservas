@@ -4,7 +4,7 @@ async function main() {
   const model = process.env.AI_MODEL;
   if (!key || !model || !/^gemini-[a-z0-9.-]+$/.test(model)) {
     console.error(
-      'Configura AI_API_KEY y AI_MODEL en .env. La clave debe ser de tu proyecto personal de Gemini.',
+      'Configura AI_API_KEY y AI_MODEL en .env. La clave debe ser de tu proyecto de Gemini.',
     );
     process.exitCode = 1;
     return;

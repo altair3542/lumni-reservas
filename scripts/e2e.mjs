@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const base = process.env.E2E_BASE_URL;
 const project = process.env.E2E_COMPOSE_PROJECT;
-if (!base || !project || !/^lumni-(e2e|a4-check|a5-check|a6-check)(?:-[a-z0-9]+)?$/.test(project))
+if (!base || !project || !/^lumni-e2e(?:-[a-z0-9]+)?$/.test(project))
   throw new Error(
-    'Usa E2E_BASE_URL y un proyecto Compose aislado lumni-e2e, lumni-a4-check o lumni-a5-check o lumni-a6-check. Nunca la base de desarrollo.',
+    'Usa E2E_BASE_URL y un proyecto Compose aislado lumni-e2e o lumni-e2e-<sufijo>. Nunca la base de desarrollo.',
   );
 const url = new URL(base);
 if (url.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(url.hostname))

@@ -122,7 +122,7 @@ describe('POST /api/quotes con sesión y PostgreSQL real', () => {
       suggestedSlot: null,
     });
   });
-  it('servicio importable por A2 obtiene las tarifas actuales sin duplicar lógica', async () => {
+  it('servicio de cotización obtiene las tarifas actuales sin duplicar lógica', async () => {
     await database.pool.query('UPDATE rooms SET hourly_rate_cop=50000 WHERE id=$1', [DEMO_ROOM_ID]);
     await database.pool.query("UPDATE services SET flat_price_cop=17000 WHERE code='coffee'");
     const result = await new QuoteService(database, now).quote({

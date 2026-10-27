@@ -9,8 +9,6 @@ Aplicación de reservas de salas para un coworking. Frontend React/Vite y backen
 | Parte 3         | [consultas.sql](consultas.sql): cuatro consultas y una respuesta sobre índices, con [DDL, fixtures y verificación independientes](sql/README.md). |
 | Parte 4 y bonus | [INCIDENTE.md](INCIDENTE.md), análisis del escenario, y [BONUS_RAILS.md](BONUS_RAILS.md), propuesta ilustrativa.                                  |
 
-La auditoría final de entrega, el acceso del evaluador al repositorio y el ensayo personal de sustentación siguen pendientes. Los resultados documentados abajo son verificaciones locales; no se afirma que GitHub Actions haya pasado.
-
 ## Demo con Docker
 
 Clona este repositorio y sitúate en su raíz. Necesitas **Docker con el motor iniciado y Compose v2.20+**. No necesitas instalar Node, pnpm o PostgreSQL en el host ni crear `.env` para la demo de reservas.
@@ -67,21 +65,21 @@ Con PostgreSQL propio, crea bases separadas `lumni_app`, `lumni_test` y, si usar
 
 [.env.example](.env.example) documenta los valores locales. Los scripts aceptan variables exportadas sin exigir `.env`; nunca incluyas una clave real en Git. En Docker, Compose construye las URLs internas y define HOST, PORT y WEB_ORIGIN; no usa la URL de conexión al host como dirección del contenedor.
 
-| Variable                                      | Uso / valor local                                                                                                                                                            |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                | Conexión de API/worker; en desarrollo apunta a `lumni_app`.                                                                                                                  |
-| `TEST_DATABASE_URL`                           | Base exclusiva de integración, `lumni_test` o `lumni_test_<sufijo>`.                                                                                                         |
-| `POSTGRES_PASSWORD`, `POSTGRES_PORT`          | Credencial inicial de PostgreSQL y puerto publicado, 55432 por defecto. El volumen conserva la credencial inicial.                                                           |
-| `APP_PORT`                                    | Web/API de Docker; 8080 por defecto.                                                                                                                                         |
-| `HOST`, `PORT`, `WEB_ORIGIN`                  | API nativa: 127.0.0.1, 3000 y http://localhost:5173. Cambiar puertos exige ajustar también URLs/proxy correspondientes.                                                      |
-| `NODE_ENV`, `SESSION_TTL_HOURS`               | development y 12 horas por defecto. Cookie Secure en producción o con WEB_ORIGIN HTTPS.                                                                                      |
-| `DEMO_CLIENT_PASSWORD`, `DEMO_ADMIN_PASSWORD` | Requeridas por el seed; mínimo 12 caracteres. Valores ficticios en el ejemplo.                                                                                               |
-| `SEED_DEMO_BOOKINGS`                          | true por defecto; false omite nuevas reservas demo adicionales. Solo se amplían en development.                                                                              |
-| `AI_API_KEY`, `AI_MODEL`                      | Clave personal de Gemini y modelo explícito. Modelo verificado: `gemini-3.5-flash-lite`. Sin configuración válida, el chat informa indisponibilidad; las reservas funcionan. |
-| `EMAIL_POLL_INTERVAL_MS`, `EMAIL_BATCH_SIZE`  | Worker: 1000 ms y 20 eventos por ciclo.                                                                                                                                      |
-| `EMAIL_FAILURE_MODE`                          | none, first-two o always; simulación solo desarrollo/test.                                                                                                                   |
-| `EMAIL_HEALTH_FILE`, `WEB_DIST_DIR`           | Opcionales; Docker configura pulso del worker y carpeta de web compilada.                                                                                                    |
-| `SQL_DATABASE_URL`                            | Referencia para una base manual separada de Parte 3. `pnpm test:sql` crea su propia base y no lee esta variable.                                                             |
+| Variable                                      | Uso / valor local                                                                                                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                | Conexión de API/worker; en desarrollo apunta a `lumni_app`.                                                                                                         |
+| `TEST_DATABASE_URL`                           | Base exclusiva de integración, `lumni_test` o `lumni_test_<sufijo>`.                                                                                                |
+| `POSTGRES_PASSWORD`, `POSTGRES_PORT`          | Credencial inicial de PostgreSQL y puerto publicado, 55432 por defecto. El volumen conserva la credencial inicial.                                                  |
+| `APP_PORT`                                    | Web/API de Docker; 8080 por defecto.                                                                                                                                |
+| `HOST`, `PORT`, `WEB_ORIGIN`                  | API nativa: 127.0.0.1, 3000 y http://localhost:5173. Cambiar puertos exige ajustar también URLs/proxy correspondientes.                                             |
+| `NODE_ENV`, `SESSION_TTL_HOURS`               | development y 12 horas por defecto. Cookie Secure en producción o con WEB_ORIGIN HTTPS.                                                                             |
+| `DEMO_CLIENT_PASSWORD`, `DEMO_ADMIN_PASSWORD` | Requeridas por el seed; mínimo 12 caracteres. Valores ficticios en el ejemplo.                                                                                      |
+| `SEED_DEMO_BOOKINGS`                          | true por defecto; false omite nuevas reservas demo adicionales. Solo se amplían en development.                                                                     |
+| `AI_API_KEY`, `AI_MODEL`                      | Clave de Gemini y modelo explícito. Modelo verificado: `gemini-3.5-flash-lite`. Sin configuración válida, el chat informa indisponibilidad; las reservas funcionan. |
+| `EMAIL_POLL_INTERVAL_MS`, `EMAIL_BATCH_SIZE`  | Worker: 1000 ms y 20 eventos por ciclo.                                                                                                                             |
+| `EMAIL_FAILURE_MODE`                          | none, first-two o always; simulación solo desarrollo/test.                                                                                                          |
+| `EMAIL_HEALTH_FILE`, `WEB_DIST_DIR`           | Opcionales; Docker configura pulso del worker y carpeta de web compilada.                                                                                           |
+| `SQL_DATABASE_URL`                            | Referencia para una base manual separada de Parte 3. `pnpm test:sql` crea su propia base y no lee esta variable.                                                    |
 
 ## Datos y recorrido de demostración
 
@@ -138,7 +136,7 @@ Para demostrar fallos en una demo aislada, agrega `EMAIL_FAILURE_MODE=first-two`
 
 ## Asistente con Gemini
 
-Guarda una clave **personal** de Gemini en `AI_API_KEY` y un modelo habilitado para ese proyecto en `AI_MODEL`, sin pegar la clave en código o frontend. `.env.example` propone `gemini-3.5-flash-lite`, verificado por API durante el desarrollo. Reinicia `pnpm dev` o recrea la app de Docker para cargar cambios de entorno.
+Configura una clave de Gemini en `AI_API_KEY` y un modelo habilitado para ese proyecto en `AI_MODEL`, sin pegar la clave en código o frontend. `.env.example` propone `gemini-3.5-flash-lite`, verificado por API durante el desarrollo. Reinicia `pnpm dev` o recrea la app de Docker para cargar cambios de entorno.
 
 ```sh
 pnpm ai:check
@@ -187,34 +185,31 @@ Los contratos exactos están en [packages/shared/src](packages/shared/src). Vali
 - [apps/web/src](apps/web/src): pantallas/componentes, formularios, queries y CSS.
 - [packages/shared](packages/shared): contratos/tipos; [scripts](scripts) e [infra](infra): arranque, diagnóstico y demo.
 
-## Pruebas y evidencia reproducible
-
-`pnpm format` aplica el formato y `pnpm format:check` lo comprueba. Las migraciones y los archivos generados se excluyen; TypeScript estricto y lint se mantienen activos.
+## Verificación
 
 ```sh
-# En nativo, con la base de pruebas de .env disponible:
+# Con la base de pruebas de .env disponible:
 pnpm verify
-# O con la demo Docker iniciada, sin Node local:
+# Alternativa con la demo Docker iniciada:
 docker compose run --rm app pnpm verify
 # Parte 3, desde el host con Node soportado y Docker encendido:
 pnpm test:sql
 ```
 
-`verify` ejecuta formato, lint, tipos, **234 pruebas** y build: 6 arranque + 19 contratos + 87 API/dominio sin BD + 6 web + 116 integración PostgreSQL. `pnpm test` ejecuta las 118 sin BD; `pnpm test:integration` las 116 de BD. Las de integración reinician solo una base de nombre `lumni_test` o `lumni_test_<sufijo>`; no apuntan a desarrollo. SQL usa su propio contenedor temporal y no se ejecuta con Docker dentro de la imagen app.
+`verify` comprueba formato, lint, tipos, pruebas y build. Las 234 pruebas se distribuyen en 118 sin base de datos (`pnpm test`) y 116 de integración PostgreSQL (`pnpm test:integration`). Integración reinicia únicamente una base llamada `lumni_test` o `lumni_test_<sufijo>`; no uses esa base para datos que quieras conservar.
 
-| Afirmación                | Dónde comprobarla                                                                                                      | Evidencia local realizada                                                                                                    |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Cotización y transiciones | [quotes.unit.test.ts](apps/api/test/quotes.unit.test.ts), [bookings.unit.test.ts](apps/api/test/bookings.unit.test.ts) | Casos numéricos/calendario y matriz de estados; incluidos en verify.                                                         |
-| Carrera e idempotencia    | [bookings.test.ts](apps/api/test/bookings.test.ts), [database.test.ts](apps/api/test/database.test.ts)                 | HTTP/PG con un ganador, replay y exclusión consultada en catálogo.                                                           |
-| Correo durable/reintentos | [emails.test.ts](apps/api/test/emails.test.ts)                                                                         | Worker real, locks, savepoint, backoff, SIGKILL antes/después del commit.                                                    |
-| Seed conserva datos       | [seed-demo.test.ts](apps/api/test/seed-demo.test.ts)                                                                   | Seis casos: estados, repetición/edición, concurrencia, ocupación, falta de cupo y rollback.                                  |
-| Chat seguro y persistente | [assistant.test.ts](apps/api/test/assistant.test.ts), [assistant.unit.test.ts](apps/api/test/assistant.unit.test.ts)   | PG real con LlmClient falso/red simulada; distintos de la demostración real del proveedor.                                   |
-| Parte 3                   | [sql/README.md](sql/README.md)                                                                                         | Seis escenarios/48 comprobaciones por runtime 22/24/26; archivo original ejecutado y respuesta de 5 líneas.                  |
-| Incidente y bonus         | [INCIDENTE.md](INCIDENTE.md), [BONUS_RAILS.md](BONUS_RAILS.md)                                                         | Incidente de 798 palabras/2 páginas A4, cuerpo de 11,5 pt/márgenes de 56 pt, cuatro líneas comerciales; Ruby solo Syntax OK. |
+| Área                | Cobertura                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cotizador y estados | [Aritmética, calendario](apps/api/test/quotes.unit.test.ts) y [transiciones](apps/api/test/bookings.unit.test.ts).                                                                                |
+| Reservas            | [Carreras HTTP, reintentos y precio pactado](apps/api/test/bookings.test.ts), con [exclusión en PostgreSQL real](apps/api/test/database.test.ts).                                                 |
+| Correo              | [Dos workers, reintentos y recuperación de procesos interrumpidos](apps/api/test/emails.test.ts).                                                                                                 |
+| Datos demo          | [Repetición, edición, concurrencia y rollback del seed](apps/api/test/seed-demo.test.ts).                                                                                                         |
+| Asistente           | [Autorización, persistencia e idempotencia](apps/api/test/assistant.test.ts) y [validación de salidas/fechas](apps/api/test/assistant.unit.test.ts). El proveedor está simulado en estas pruebas. |
+| SQL                 | [Seis escenarios y 48 comprobaciones](sql/README.md) sobre el DDL del enunciado y fixtures sintéticos.                                                                                            |
 
-Historial de verificación: base A0–A6 con 228 pruebas en Node 22/24/26 y Docker. Tras ampliar el seed, suite 234 completa en Node 22/PG16 y los seis casos nuevos en 24/26. Arranque Docker/dev con base nueva: 25 reservas, admin páginas 20/5, 18 capturas reales; reinicio conserva edición y no duplica. Los cambios documentales posteriores no se presentan como una nueva matriz completa en todas las versiones.
+Se ejecutó `verify` con Node 22.18.0, 24.22.1 y 26.10.0, y en Docker con PostgreSQL 16. La integración de Gemini se comprobó además con la API real: cotización, creación de borrador, recarga y reintento sin confirmar ni generar correos. Esa comprobación no forma parte de las suites sin clave.
 
-Demostración real del proveedor realizada el 25-10-2026: Gemini 3.5 Flash-Lite, tres turnos HTTP/SDK/PG, seis personas/sábado 09:00/dos horas/proyector, draft de 195000 COP, historial/ID iguales tras recarga/replay y cero confirmaciones. Se seleccionó ese modelo después de 503/timeout con 3.8; no se dedujo éxito de Playground ni de mocks. La disponibilidad actual debe comprobarse con la clave del evaluador.
+`pnpm format` aplica el formato y `pnpm format:check` lo comprueba; las migraciones y los archivos generados se excluyen.
 
 ### Navegador
 
@@ -229,36 +224,30 @@ E2E_BASE_URL=http://localhost:8097 E2E_COMPOSE_PROJECT=lumni-e2e pnpm test:e2e
 docker compose --env-file .env.example --project-name lumni-e2e down --volumes
 ```
 
-En Linux instala también las bibliotecas del navegador con `pnpm --filter @lumni/web exec playwright install --with-deps chromium`. En PowerShell establece las variables con `$env:NOMBRE="valor"` antes del comando. El runner comprueba nombre de proyecto y puerto antes de escribir fixtures. Resultados en el directorio temporal o `E2E_OUTPUT_DIR`; Chromium instalado se admite con `PLAYWRIGHT_CHROMIUM_PATH`. No se guardan cookies/trazas de auth. CI configura matriz 22/24/26, SQL en 22 y E2E Docker con Chromium; su ejecución remota no está comprobada aquí.
+En Linux instala también las bibliotecas del navegador con `pnpm --filter @lumni/web exec playwright install --with-deps chromium`. En PowerShell establece las variables con `$env:NOMBRE="valor"` antes del comando. El runner comprueba nombre de proyecto y puerto antes de escribir fixtures. Resultados en el directorio temporal o `E2E_OUTPUT_DIR`; Chromium instalado se admite con `PLAYWRIGHT_CHROMIUM_PATH`. No se guardan cookies/trazas de auth. [CI](.github/workflows/ci.yml) ejecuta la matriz Node 22/24/26, SQL en Node 22 y los recorridos Docker con Chromium.
 
 ## Parte 3 e informe del incidente
 
-[consultas.sql](consultas.sql) se ejecuta sobre el DDL simplificado del PDF, que difiere de la aplicación. [sql/README.md](sql/README.md) explica `pnpm test:sql`, psql, resultados y supuestos. Los fixtures son sintéticos propios; falta contrastar el dataset anunciado por el evaluador. La respuesta sobre índices propone qué medir; no afirma un benchmark de cinco millones de pagos.
+[consultas.sql](consultas.sql) se ejecuta sobre el DDL simplificado del enunciado, que difiere de la aplicación. [sql/README.md](sql/README.md) explica `pnpm test:sql`, psql, resultados y supuestos. La validación utiliza los fixtures sintéticos incluidos en `sql/seed.sql`. La respuesta sobre índices describe un método de medición; no incluye un benchmark de cinco millones de pagos.
 
 [INCIDENTE.md](INCIDENTE.md) responde hipótesis, validación, recuperación, responsables, prevención y comunicación comercial. Es un análisis del escenario; no implementa WhatsApp ni afirma haber consultado producción o reenviado mensajes. [BONUS_RAILS.md](BONUS_RAILS.md) propone corrección con fuentes oficiales Rails 8.1; el Ruby ilustrativo no es una integración ejecutada en la app TypeScript.
 
 ## Uso de IA
 
-**Herramienta de desarrollo:** Codex en la aplicación de escritorio, para implementar/revisar TypeScript, SQL, pruebas, configuración y documentos; también ejecutó comandos, recorridos de navegador y render de comprobación del informe. No se ejecutaron subagentes. **IA del producto:** Gemini mediante `@google/genai`, exclusivamente para extracción estructurada de la solicitud. Son usos distintos: los tests falsos no se presentan como conversaciones reales.
+Se utilizó **Codex** como asistente de desarrollo para TypeScript, SQL, pruebas, configuración y documentación. El trabajo incluyó el cotizador, las transacciones de reservas, administración, interfaz, worker de correo, integración del chat y consultas SQL. La IA del producto es **Gemini**, mediante `@google/genai`, y se limita a extraer la solicitud según el esquema descrito arriba.
 
-El candidato dirigió el alcance por fases, exigió separar planificación/referencias del repo, mantuvo Git manual, pidió soporte de su entorno, legibilidad y el asistente en burbuja/panel. Codex asistió en cotizador, transacciones, admin, interfaz, worker, chat, fixtures SQL, análisis y documentación.
+Un ejemplo de propuesta corregida fue restringir inicialmente `engines.node` a Node 22: impedía instalar el proyecto con Node 26. Se amplió el soporte a 22.18+, 24 y 26 después de ejecutar las comprobaciones correspondientes, manteniendo pnpm fijado y la alternativa Docker. La configuración está en [package.json](package.json).
 
-| Propuesta inicial corregida  | Motivo y resultado                                                                                                                                                                                                     |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| engines limitado a Node 22   | El candidato obtuvo error con Node 26 y pidió resolver el arranque del evaluador. Se admitieron 22.18+/24/26 después de verificarlos, manteniendo pnpm fijado y ruta Docker. Es comprobable en package.json/historial. |
-| Chat como página del sidebar | El candidato rechazó esa interacción. Se sustituyó por AssistantDock con burbuja/panel y continuidad al minimizar/navegar; los cuatro recorridos específicos de UI pasaron.                                            |
+La revisión manual incluyó los flujos cliente/administrador, el reintento de confirmación con el mismo ID, precio y fecha, y la captura de correo sin duplicación tras reiniciar el worker. Codex ejecutó las suites automatizadas, las pruebas de navegador, el recorrido real de Gemini y la comprobación de extensión del informe. Se distinguen las pruebas con proveedor simulado de las llamadas reales.
 
-**Verificación personal reportada por el candidato:** flujo cliente/admin, replay de confirmación con mismo ID/fecha/total de 164000, listado admin y captura visible que conservó un intento tras reiniciar. También ejecutó el diagnóstico de Gemini 3.8 y reportó 503, aunque Playground respondía. La prueba HTTP exitosa con 3.5, las suites automáticas y el render documental fueron ejecutados por Codex. No se atribuye al candidato una revisión de cada línea ni un ensayo de defensa aún no realizado.
+Las instrucciones técnicas utilizadas por el asistente están en [AGENTS.md](AGENTS.md).
 
-[AGENTS.md](AGENTS.md) contiene las instrucciones de trabajo incluidas. Planificación, briefs, referencias y registros personales permanecen fuera del repositorio por instrucción del candidato; la app, su instalación y sus tests no dependen de esa carpeta. Los commits/mensajes y cualquier publicación/envío son manuales del candidato.
-
-## Fuera de alcance y límites pendientes
+## Fuera de alcance y limitaciones
 
 - Sin SMTP/Mailpit ni entrega externa: PostgreSQL permite demostrar una captura única sin prometer lo que un proveedor no garantiza.
 - Sin registro, recuperación de contraseña, pagos o facturación real: autenticación de dos roles para la prueba; payments pertenece solo al esquema de Parte 3. WhatsApp y Rails se resuelven como escritos, según enunciado.
 - Gemini depende de clave/acceso/cuota y puede devolver 429/503. No hay proveedor alternativo ni mock silencioso del producto. Una petición activa por dueño/proceso y diez intentos/minuto en memoria; PG limita diez mensajes guardados/minuto. El límite de intentos fallidos no está distribuido entre instancias.
 - No se implementa producción pública, TLS, rotación de credenciales, gestión multiempresa o un broker de jobs. La demo usa configuración y datos locales.
-- Dataset oficial SQL, auditoría final desde clon limpio/secretos en historial, CI remoto, acceso del evaluador y ensayo personal de 45 minutos pendientes. No se promete aprobación externa ni fecha límite no confirmada.
 
 ## Diagnóstico
 

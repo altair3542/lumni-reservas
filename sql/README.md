@@ -31,12 +31,12 @@ CI ejecuta este comando en el job nativo Node 22. `pnpm verify` mantiene la suit
 Usa una base **nueva y exclusiva para Parte 3**. El DDL crea tablas sin borrarlas; no apuntes a las de la aplicación. Sustituye la URL por la de esa base:
 
 ```sh
-psql "$SQL_PART3_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f sql/schema.sql
-psql "$SQL_PART3_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f sql/seed.sql
-psql "$SQL_PART3_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f consultas.sql
+psql "$SQL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f sql/schema.sql
+psql "$SQL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f sql/seed.sql
+psql "$SQL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f consultas.sql
 ```
 
-Los fixtures son **sintéticos propios**, no el script prometido por el evaluador. Sembrar una segunda vez produce conflictos de PK: usa una base vacía. Cuando llegue el dataset oficial, carga su script en otra base con el DDL oficial y ejecuta directamente `consultas.sql`; no requiere funciones, extensiones ni variables psql.
+Los fixtures de `seed.sql` son **datos sintéticos** para comprobar los casos descritos. Sembrar una segunda vez produce conflictos de PK: usa una base vacía. Para consultar otro conjunto de datos compatible, cárgalo en una base independiente con el mismo DDL y ejecuta `consultas.sql`; las consultas no requieren funciones, extensiones ni variables psql.
 
 ## Supuestos
 

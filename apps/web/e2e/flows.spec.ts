@@ -113,7 +113,7 @@ test('cliente cotiza sábado, guarda, confirma y admin consulta/cancela sin camb
 }) => {
   await login(page);
   const id = await quoteDraft(page, 14, true);
-  await finishSteps(page, 'Encuentro completo A4');
+  await finishSteps(page, 'Encuentro completo');
   await expect(page.locator('.breakdown .total')).toContainText('200.000');
   await page.getByRole('button', { name: 'Confirmar reserva', exact: false }).click();
   const confirmation = page.getByRole('button', { name: 'Sí, confirmar reserva' });
@@ -158,7 +158,7 @@ test('retoma datos y horario al cerrar navegador, limpiar almacenamiento e ingre
 }) => {
   await login(page);
   const id = await quoteDraft(page, 22);
-  await page.getByLabel('Nombre de contacto').fill('Retoma durable A4');
+  await page.getByLabel('Nombre de contacto').fill('Retoma de borrador');
   await page.getByLabel('Empresa').fill('Empresa que se conserva');
   await page.getByRole('button', { name: 'Guardar y continuar', exact: false }).click();
   await expect(page.getByRole('heading', { name: 'El momento y el lugar.' })).toBeVisible();
@@ -172,7 +172,7 @@ test('retoma datos y horario al cerrar navegador, limpiar almacenamiento e ingre
   await login(resumed);
   await resumed.goto(`/#/reservas/${id}`);
   await resumed.getByRole('button', { name: '1 Tus datos' }).click();
-  await expect(resumed.getByLabel('Nombre de contacto')).toHaveValue('Retoma durable A4');
+  await expect(resumed.getByLabel('Nombre de contacto')).toHaveValue('Retoma de borrador');
   await expect(resumed.getByLabel('Empresa')).toHaveValue('Empresa que se conserva');
   await resumed.getByRole('button', { name: '2 Sala y horario' }).click();
   await expect(resumed.getByLabel('Fecha', { exact: true })).toHaveValue(day(22));
@@ -236,7 +236,7 @@ test('colisión al confirmar muestra alternativa y permite revisar otro horario 
 }) => {
   await login(page);
   await quoteDraft(page, 31);
-  await finishSteps(page, 'Conflicto A4');
+  await finishSteps(page, 'Conflicto de horario');
   const competitor = await ready(page.request, day(31));
   await json(page.request, `/api/bookings/${competitor.id}/confirm`, {
     expectedVersion: competitor.version,

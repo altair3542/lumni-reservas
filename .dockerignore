@@ -10,19 +10,8 @@ coverage
 !.env.example
 .DS_Store
 
-# Material externo no forma parte de la imagen de la aplicación.
+# Material local excluido de la entrega.
+/work/
+/.local/
 /agentes/
 /referencia/
-/docs/
-/CONTRATOS_Y_MODELO.md
-/GUIA_CODEX_PERSONAL.md
-/MANIFIESTO.json
-/MATRIZ_REQUISITOS.md
-/PLAN_MAESTRO.md
-/PROGRESO.md
-/PROMPTS_CODEX.md
-/PRUEBAS_Y_ACEPTACION.md
-/REGISTRO_ADAPTACION_CODEX.md
-/REGISTRO_DE_FUSION.md
-/SQL_INCIDENTE_BONUS.md
-/SUSTENTACION_Y_ENTREGA.md
